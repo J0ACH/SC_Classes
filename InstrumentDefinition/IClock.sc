@@ -5,13 +5,11 @@ IClock {
 		clock = nil;
 	}
 
-	*new {
-		if(clock.isNil) { clock = TempoClock.new(1) };
-		^super.new.initClock;
-	}
+	*new { ^super.new.initClock }
 
 	initClock {
-		// clock = TempoClock.new(1);
+		if(clock.isNil) { clock = TempoClock.new(1) };
+		"IClock.init".warn;
 	}
 
 	bpm { ^clock.tempo * 60	}
