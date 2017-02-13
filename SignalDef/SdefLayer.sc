@@ -117,63 +117,60 @@ SdefLayer {
 	// editing //////////////////////////
 
 	shift {|target, offset|
-		var layer = sDef.layers.at(target);
-		duration = layer.duration + offset;
-
-		if(layer.notNil)
+		if(this.prValidTarget(target))
 		{
-			var offSize = offset * rate;
-			signal = Signal.newClear(layer.size + offSize);
-			signal.overWrite(layer.signal, offSize);
+			var layer = sDef.layers.at(target);
 			layer.addParent(this);
-		};
-		this.storeArguments(thisMethod, target, offset);
-		this.update;
+			duration = layer.duration + offset;
+			signal = super.class.prSigOffset(layer.signal, offset * rate, false);
+
+			this.storeArguments(thisMethod, target, offset);
+			this.update;
+		}
 	}
 
 	dup { |target, n|
-		var layer = sDef.layers.at(target);
-		duration = layer.duration * n;
-
-		if(layer.notNil)
+		if(this.prValidTarget(target))
 		{
-			signal = Signal.new;
-			n.do({ signal = signal ++ layer.signal });
+			var layer = sDef.layers.at(target);
 			layer.addParent(this);
-		};
-		this.storeArguments(thisMethod, target, n);
-		this.update;
+			duration = layer.duration * n;
+			signal = super.class.prSigWrapAt(layer.signal, layer.size * n);
+
+			this.storeArguments(thisMethod, target, n);
+			this.update;
+		}
 	}
 
 	dupTime { |target, time, targetDur = nil|
-		var layer = sDef.layers.at(target);
-		var rest = time % targetDur ? layer.duration;
-		var loopCnt = (time-rest)/targetDur;
-		duration = time;
-
-		if(layer.notNil)
+		if(this.prValidTarget(target))
 		{
-			signal = Signal.newClear(time * rate);
-			loopCnt.do({|noLoop| signal.overWrite(layer.signal, noLoop * targetDur * rate) });
-			if(rest != 0) { signal.overWrite(layer.signal, loopCnt * targetDur * rate) };
+			var layer = sDef.layers.at(target);
 			layer.addParent(this);
-		};
-		this.storeArguments(thisMethod, target, time, targetDur);
-		this.update;
+			duration = time;
+			if (targetDur.notNil)
+			{
+				signal = super.class.prSigSize(layer.signal, time * rate);
+				signal = super.class.prSigWrapAt(signal, time * rate);
+			}
+			{ signal = super.class.prSigWrapAt(layer.signal, time * rate) };
+
+			this.storeArguments(thisMethod, target, time, targetDur);
+			this.update;
+		}
 	}
 
 	fixTime { |target, time|
-		var layer = sDef.layers.at(target);
-		duration = time;
-
-		if(layer.notNil)
+		if(this.prValidTarget(target))
 		{
-			signal = Signal.newClear(time * rate);
-			signal.overWrite(layer.signal);
+			var layer = sDef.layers.at(target);
 			layer.addParent(this);
-		};
-		this.storeArguments(thisMethod, target, time);
-		this.update;
+			duration = time;
+			signal = super.class.prSigSize(layer.signal, time * rate);
+
+			this.storeArguments(thisMethod, target, time);
+			this.update;
+		}
 	}
 
 	// merge //////////////////////////
@@ -258,6 +255,12 @@ SdefLayer {
 		this.update;
 	}
 
+	prValidTarget { |target|
+		if(target == index) { "SdefLayer argument target cannot be same like layer's index".warn; ^false };
+		if(sDef.layers.at(target).isNil) { "SdefLayer argument target not exist".warn; ^false };
+		^true;
+	}
+
 	// signal operations //////////////////////////
 
 	*prSigChain { |...arrSig|
@@ -293,6 +296,19 @@ SdefLayer {
 	*prSigWrapAt { |sig, wrapSize|
 		if(sig.isKindOf(Collection))
 		{ ^Signal.fill( wrapSize, {|i| sig.wrapAt(i % wrapSize) }) }
+		{ ^nil }
+	}
+
+	*prSigSize { |sig, size|
+		if(sig.isKindOf(Collection))
+		{
+			size = size.round(1);
+			"SdefLayer.prSigSize(sig: % | sig.size: % | size: %)".format(sig, sig.size, size).postln;
+			case
+			{ size > sig.size } { ^Signal.newFrom(sig ++ Signal.newClear(size - sig.size)) }
+			{ size == sig.size } { ^Signal.newFrom(sig) }
+			{ size < sig.size } { if(size != 0) { ^Signal.newFrom(sig[0..size-1]) } { ^Signal.new } };
+		}
 		{ ^nil }
 	}
 

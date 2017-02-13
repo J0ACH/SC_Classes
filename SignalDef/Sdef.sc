@@ -156,7 +156,7 @@ Sdef {
 		currentBuffer.loadCollection(
 			collection: this.signal,
 			startFrame: 0,
-			action: {|buff| { this.updatePlot; }.defer }
+			action: {|buff| { this.updatePlot; }.defer(0.1) }
 		);
 
 		this.fadeOutSynth(fTime);
