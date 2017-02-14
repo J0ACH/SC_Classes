@@ -4,12 +4,13 @@ NetUser {
 
 	var name;
 	var netMask;
+	var netProfiles;
 
-	var conditionNetMask;
+	var conditionNetMask, conditionNetProfiles;
 
 	*initClass {
 		singleton = nil;
-		answerDelayLimit = 2;
+		answerDelayLimit = 0.5;
 	}
 
 	*new {|userName|
@@ -21,28 +22,35 @@ NetUser {
 
 	initUser {|userName|
 
-		if(userName.notNil)
-		{ name = userName }
-		{
-			name = Platform.case(
-				\osx,       { "whoami".unixCmdGetStdOut.replace("\n", ""); },
-				\linux,     { "whoami".unixCmdGetStdOut.replace("\n", ""); },
-				\windows,   { "echo %username%".unixCmdGetStdOut.replace("\n", ""); }
-			);
-		};
+		if(userName.isNil) { this.getNetUserName };
 
 		conditionNetMask = Condition.new();
+		conditionNetProfiles = Condition.new();
+
 		Routine.run({
-			this.getUserIP;
+			this.getNetMask;
 			"conditionNetMask hang".warn;
 			conditionNetMask.unhangTimeLimit(answerDelayLimit, {"NetUser not found netMask".warn});
 			conditionNetMask.hang;
 			"conditionNetMask unhang".warn;
-			// this.scanBroadcast;
+			"conditionNetProfiles hang".warn;
+			this.getNetProfiles;
+			// conditionNetProfiles.unhangTimeLimit(answerDelayLimit, { this.collectNetProfiles; "conditionNetProfiles time limit".warn});
+			conditionNetProfiles.hang;
+			"conditionNetProfiles unhang".warn;
+			"NetUser.initUser DONE".warn;
 		});
 	}
 
-	getUserIP {
+	getNetUserName {
+		name = Platform.case(
+			\osx,       { "whoami".unixCmdGetStdOut.replace("\n", ""); },
+			\linux,     { "whoami".unixCmdGetStdOut.replace("\n", ""); },
+			\windows,   { "echo %username%".unixCmdGetStdOut.replace("\n", ""); }
+		);
+	}
+
+	getNetMask {
 		var tempBroadcast = NetAddr.broadcastFlag;
 		NetAddr.broadcastFlag = true;
 		OSCdef.newMatching(\msg_getMyNetIP, {|msg, time, addr, recvPort|
@@ -55,15 +63,39 @@ NetUser {
 		NetAddr.broadcastFlag = tempBroadcast;
 	}
 
-	scanBroadcast {
+	getNetProfiles {
+		var answered = Array.newClear(255).fill(false);
+		conditionNetProfiles.unhangTimeLimit(answerDelayLimit, { this.collectNetProfiles(answered) });
+
 		OSCdef.newMatching(\msg_getAnswerFromNetIP, {|msg, time, addr, recvPort|
-			"zprava dorazila [%,%,%,%]".format(msg, time, addr, recvPort).warn;
+			var answerMask = addr.ip.split($.);
+			var answerAt = answerMask[3].asInt;
+			answered.put(answerAt, true);
+			if(answered.includes(false).not) { this.collectNetProfiles(answered) };
 		}, '/user/getAnswerNetIP', nil);
 
-		20.do({|i|
-			NetAddr(netMask.put(3,i).join("."), NetAddr.langPort).sendMsg('/user/getAnswerNetIP');
-			netMask.put(3,i).join(".").postln;
+		// NetAddr(netMask.put(3,14).join("."), NetAddr.langPort).sendMsg('/user/getAnswerNetIP');
+		// /*
+		255.do({|i|
+		NetAddr(netMask.put(3,i).join("."), NetAddr.langPort).sendMsg('/user/getAnswerNetIP');
+		// netMask.put(3,i).join(".").postln;
 		});
+		// */
+	}
+
+	collectNetProfiles {|answeredArray|
+		var answeredIPs = List.new;
+		answeredArray.collect({|bool, i|
+			// if(bool && (i != netMask[3])) {
+			if(bool) {
+				answeredIPs.add( netMask.put(3,i).join("."))
+			}
+		});
+		netProfiles = answeredIPs.array;
+		netProfiles.postln;
+		OSCdef(\msg_getAnswerFromNetIP).free;
+		conditionNetProfiles.test = true;
+		conditionNetProfiles.unhang;
 	}
 
 	*userName { if(singleton.notNil) { ^singleton.userName } { ^nil } }
