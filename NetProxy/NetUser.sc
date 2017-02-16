@@ -3,7 +3,7 @@ NetUser {
 	classvar answerDelayLimit;
 
 	var name;
-	var netMask;
+	var netMask, netPort;
 	var netProfiles;
 
 	var conditionNetMask, conditionNetProfiles;
@@ -18,27 +18,34 @@ NetUser {
 		^singleton;
 	}
 
-	*free {	singleton = nil	}
+	*free {
+		if( singleton.notNil ) {
+			singleton.prSend('/user/leaved', singleton.userName);
+			OSCdef(\user_connected).free;
+			OSCdef(\user_isHere).free;
+			OSCdef(\user_leaved).free;
+		};
+		singleton = nil;
+	}
 
 	initUser {|userName|
 
-		if(userName.isNil) { this.getNetUserName };
+		if(userName.isNil) { this.getNetUserName } { name = userName };
+		netPort = 10000;
 
 		conditionNetMask = Condition.new();
 		conditionNetProfiles = Condition.new();
 
 		Routine.run({
 			this.getNetMask;
-			"conditionNetMask hang".warn;
-			conditionNetMask.unhangTimeLimit(answerDelayLimit, {"NetUser not found netMask".warn});
+			// "conditionNetMask hang".warn;
 			conditionNetMask.hang;
-			"conditionNetMask unhang".warn;
-			"conditionNetProfiles hang".warn;
+			// "conditionNetMask unhang".warn;
+			// "conditionNetProfiles hang".warn;
 			this.getNetProfiles;
-			// conditionNetProfiles.unhangTimeLimit(answerDelayLimit, { this.collectNetProfiles; "conditionNetProfiles time limit".warn});
 			conditionNetProfiles.hang;
-			"conditionNetProfiles unhang".warn;
-			"NetUser.initUser DONE".warn;
+			// "conditionNetProfiles unhang".warn;
+			// "NetUser.initUser DONE".warn;
 		});
 	}
 
@@ -53,9 +60,12 @@ NetUser {
 	getNetMask {
 		var tempBroadcast = NetAddr.broadcastFlag;
 		NetAddr.broadcastFlag = true;
-		OSCdef.newMatching(\msg_getMyNetIP, {|msg, time, addr, recvPort|
+
+		conditionNetMask.unhangTimeLimit(answerDelayLimit, {"NetUser not found netMask".warn});
+
+		OSCdef.newMatching(\user_getMyNetIP, {|msg, time, addr, recvPort|
 			netMask = addr.ip.split($.);
-			"NetUser info \n\t - name: % \n\t - netIP: %".format(name, this.netIP).postln;
+			this.players;
 			conditionNetMask.test = true;
 			conditionNetMask.unhang;
 		},  '/user/getMyNetIP', nil).oneShot;
@@ -63,47 +73,70 @@ NetUser {
 		NetAddr.broadcastFlag = tempBroadcast;
 	}
 
+	prSenderFilter{ |addr, fnc| if(addr.ip != this.netIP) { ^fnc.value } { ^nil } }
+
+	prSend {|path, args| if(netProfiles.notNil) {
+		netProfiles.keysDo({|addr| NetAddr(addr, NetAddr.langPort).sendMsg(path.asSymbol, args) })
+	}}
+
 	getNetProfiles {
-		var answered = Array.newClear(255).fill(false);
-		conditionNetProfiles.unhangTimeLimit(answerDelayLimit, { this.collectNetProfiles(answered) });
+		var answered = IdentityDictionary.new();
 
-		OSCdef.newMatching(\msg_getAnswerFromNetIP, {|msg, time, addr, recvPort|
-			var answerMask = addr.ip.split($.);
-			var answerAt = answerMask[3].asInt;
-			answered.put(answerAt, true);
-			if(answered.includes(false).not) { this.collectNetProfiles(answered) };
-		}, '/user/getAnswerNetIP', nil);
-
-		// NetAddr(netMask.put(3,14).join("."), NetAddr.langPort).sendMsg('/user/getAnswerNetIP');
-		// /*
-		255.do({|i|
-		NetAddr(netMask.put(3,i).join("."), NetAddr.langPort).sendMsg('/user/getAnswerNetIP');
-		// netMask.put(3,i).join(".").postln;
+		conditionNetProfiles.unhangTimeLimit(answerDelayLimit, {
+			netProfiles = answered;
+			conditionNetProfiles.test = true;
+			conditionNetProfiles.unhang;
 		});
-		// */
-	}
 
-	collectNetProfiles {|answeredArray|
-		var answeredIPs = List.new;
-		answeredArray.collect({|bool, i|
-			// if(bool && (i != netMask[3])) {
-			if(bool) {
-				answeredIPs.add( netMask.put(3,i).join("."))
-			}
-		});
-		netProfiles = answeredIPs.array;
-		netProfiles.postln;
-		OSCdef(\msg_getAnswerFromNetIP).free;
-		conditionNetProfiles.test = true;
-		conditionNetProfiles.unhang;
+		OSCdef.newMatching(\user_connected, {|msg, time, addr, recvPort|
+			this.prSenderFilter(addr, {
+				var sender = msg[1];
+				NetAddr(addr.ip, NetAddr.langPort).sendMsg('/user/isHere', name);
+				"Player % has joined to session".format(sender).warn;
+			})
+		}, '/user/connected', nil);
+
+		OSCdef.newMatching(\user_isHere, {|msg, time, addr, recvPort|
+			this.prSenderFilter(addr, {
+				var sender = msg[1];
+				answered.put(addr.ip, sender);
+				"Player % is here too".format(sender).warn;
+			})
+		}, '/user/isHere', nil);
+
+		OSCdef.newMatching(\user_leaved, {|msg, time, addr, recvPort|
+			this.prSenderFilter(addr, {
+				var sender = msg[1];
+				msg.postln;
+				answered.removeAt(addr.ip);
+				"Player % leaved from session".format(sender).warn;
+			})
+		}, '/user/leaved', nil);
+
+		255.do({|i| NetAddr(netMask.copy.put(3,i).join("."), NetAddr.langPort).sendMsg('/user/connected', name); });
 	}
 
 	*userName { if(singleton.notNil) { ^singleton.userName } { ^nil } }
-	userName  { ^name }
+	userName  { if(singleton.notNil) { ^name } { ^nil } }
 
-	netIP { if(netMask.notNil) { ^netMask.join(".") } { ^nil } }
+	netIP { if(singleton.notNil && netMask.notNil) { ^netMask.join(".") } { ^nil } }
 
 	printOn { |stream|	stream << this.class.name << "('" << name << "')"; }
+
+	players {
+		if(singleton.notNil) {
+			"NetUser info \n\t - name: % \n\t - netIP: %".format(name, this.netIP).postln;
+			if(netProfiles.notNil)
+			{
+				"\n\nother profiles:".postln;
+				netProfiles.sortedKeysValuesDo({|playerNet, playerName|
+					("\t- name:" + playerName).postln;
+					("\t- addr:" + playerNet + "\n").postln;
+				});
+			}
+		} { ^nil }
+	}
+
 }
 
 + Condition {
