@@ -31,7 +31,8 @@ NetUser {
 	initUser {|userName|
 
 		if(userName.isNil) { this.getNetUserName } { name = userName };
-		netPort = 10000;
+		netPort = 4002;
+		thisProcess.openUDPPort(netPort);
 
 		conditionNetMask = Condition.new();
 		conditionNetProfiles = Condition.new();
@@ -76,7 +77,7 @@ NetUser {
 	prSenderFilter{ |addr, fnc| if(addr.ip != this.netIP) { ^fnc.value } { ^nil } }
 
 	prSend {|path, args| if(netProfiles.notNil) {
-		netProfiles.keysDo({|addr| NetAddr(addr, NetAddr.langPort).sendMsg(path.asSymbol, args) })
+		netProfiles.keysDo({|addr| NetAddr(addr, netPort).sendMsg(path.asSymbol, args) })
 	}}
 
 	getNetProfiles {
@@ -89,31 +90,34 @@ NetUser {
 		});
 
 		OSCdef.newMatching(\user_connected, {|msg, time, addr, recvPort|
+			// "\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
 			this.prSenderFilter(addr, {
 				var sender = msg[1];
-				NetAddr(addr.ip, NetAddr.langPort).sendMsg('/user/isHere', name);
+				NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
 				"Player % has joined to session".format(sender).warn;
 			})
-		}, '/user/connected', nil);
+		}, '/user/connected', recvPort: netPort).permanent_(true);
 
 		OSCdef.newMatching(\user_isHere, {|msg, time, addr, recvPort|
+			// "\user_isHere % | % | % | %".format(msg, time, addr, recvPort).warn;
 			this.prSenderFilter(addr, {
 				var sender = msg[1];
 				answered.put(addr.ip, sender);
 				"Player % is here too".format(sender).warn;
 			})
-		}, '/user/isHere', nil);
+		}, '/user/isHere', recvPort: netPort).permanent_(true);
 
 		OSCdef.newMatching(\user_leaved, {|msg, time, addr, recvPort|
+			// "\user_leaved % | % | % | %".format(msg, time, addr, recvPort).warn;
 			this.prSenderFilter(addr, {
 				var sender = msg[1];
-				msg.postln;
 				answered.removeAt(addr.ip);
 				"Player % leaved from session".format(sender).warn;
 			})
-		}, '/user/leaved', nil);
+		}, '/user/leaved', recvPort: netPort).permanent_(true);
 
-		255.do({|i| NetAddr(netMask.copy.put(3,i).join("."), NetAddr.langPort).sendMsg('/user/connected', name); });
+		255.do({|i| NetAddr(netMask.copy.put(3,i).join("."), netPort).sendMsg('/user/connected', name); });
+		// NetAddr("10.0.0.35", 8000).sendMsg('/user/connected', name);
 	}
 
 	*userName { if(singleton.notNil) { ^singleton.userName } { ^nil } }
