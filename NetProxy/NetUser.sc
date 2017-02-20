@@ -116,7 +116,8 @@ NetUser {
 			})
 		}, '/user/leaved', recvPort: netPort).permanent_(true);
 
-		255.do({|i| NetAddr(netMask.copy.put(3,i).join("."), netPort).sendMsg('/user/connected', name); });
+		230.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
+		// 254.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
 		// NetAddr("10.0.0.35", 8000).sendMsg('/user/connected', name);
 	}
 
