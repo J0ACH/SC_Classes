@@ -4,6 +4,7 @@ NetObject {
 	classvar messageID;
 
 	var <objectID;
+	var conditionMsgConfirm;
 
 	*initClass {
 		port = 4002;
@@ -42,15 +43,26 @@ NetObject {
 	}
 
 	sendMsg { |addr, msg ... args|
-		var defName = "NetObject_confirm_%".format(messageID).asSymbol;
-		var defMsg = "MsgID_%".format(messageID).asSymbol;
+		Routine.run({
+			var defName = "NetObject_confirm_%".format(messageID).asSymbol;
+			var defMsg = "MsgID_%".format(messageID).asSymbol;
+			conditionMsgConfirm = Condition.new();
+			conditionMsgConfirm.unhangTimeLimit(0.1, { "resend %".format(defMsg).warn; this.sendMsg(addr, msg, *args) });
 
-		OSCdef.newMatching(defName, {|msg, time, addr, recvPort|
-			"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
-		}, defMsg, recvPort: port).oneShot;
+			OSCdef.newMatching(defName, {|msg, time, addr, recvPort|
+				"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
+				conditionMsgConfirm.test = true;
+				conditionMsgConfirm.unhang;
+			}, defMsg, recvPort: port).oneShot;
 
-		NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
-		messageID = messageID + 1;
+
+			NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
+
+			messageID = messageID + 1;
+			conditionMsgConfirm.hang;
+			// thisThread.stop;
+			// "send & confirm DONE".warn;
+		});
 	}
 }
 
