@@ -24,8 +24,9 @@ NetUser {
 			OSCdef(\user_connected).free;
 			OSCdef(\user_isHere).free;
 			OSCdef(\user_leaved).free;
+			singleton = nil;
 		};
-		singleton = nil;
+		^nil
 	}
 
 	initUser {|userName|
@@ -80,6 +81,30 @@ NetUser {
 		netProfiles.keysDo({|addr| NetAddr(addr, netPort).sendMsg(path.asSymbol, args) })
 	}}
 
+	sendConfirmedMsg { |addr, msg|
+		/*
+		OSCdef.newMatching(\netMsg_confirm, {|msg, time, addr, recvPort|
+			// "\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
+			this.prSenderFilter(addr, {
+				var sender = msg[1];
+				var net = NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
+
+				"Player % has joined to session".format(sender).warn;
+			})
+		}, msg, recvPort: port).oneShot;
+		*/
+		NetAddr(addr, netPort).sendMsg('/netMsg', msg);
+	}
+
+	initReciver {
+		OSCdef.newMatching(\netMsg, {|msg, time, addr, recvPort|
+			"\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
+
+		}, '/netMsg', recvPort: netPort).permanent_(true);
+	}
+
+
+
 	getNetProfiles {
 		var answered = IdentityDictionary.new();
 
@@ -93,7 +118,7 @@ NetUser {
 			// "\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
 			this.prSenderFilter(addr, {
 				var sender = msg[1];
-				NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
+				var net = NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
 				"Player % has joined to session".format(sender).warn;
 			})
 		}, '/user/connected', recvPort: netPort).permanent_(true);
@@ -116,8 +141,8 @@ NetUser {
 			})
 		}, '/user/leaved', recvPort: netPort).permanent_(true);
 
-		230.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
-		// 254.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
+		// 230.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
+		254.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
 		// NetAddr("10.0.0.35", 8000).sendMsg('/user/connected', name);
 	}
 
