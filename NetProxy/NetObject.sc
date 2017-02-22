@@ -19,6 +19,8 @@ NetObject {
 		thisProcess.openUDPPort(port);
 
 		objectID = id ? this.identityHash;
+		// conditionMsgConfirm = Semaphore(1);
+		// conditionMsgConfirm = Condition.new(true);
 
 		OSCdef.newMatching(\NetObject, {|msg, time, addr, recvPort|
 			var msgID = msg[1];
@@ -43,26 +45,34 @@ NetObject {
 	}
 
 	sendMsg { |addr, msg ... args|
+		// var defName = "NetObject_confirm_%".format(messageID).asSymbol;
+		var defMsg = "MsgID_%".format(messageID).asSymbol;
+		var thread;
+		conditionMsgConfirm = Condition.new(true);
+		messageID = messageID + 1;
+
+		OSCdef.newMatching(defMsg, {|msg, time, addr, recvPort|
+			"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
+			conditionMsgConfirm.test = false;
+		}, defMsg, recvPort: port).oneShot;
+
 		Routine.run({
-			var defName = "NetObject_confirm_%".format(messageID).asSymbol;
-			var defMsg = "MsgID_%".format(messageID).asSymbol;
-			conditionMsgConfirm = Condition.new();
-			conditionMsgConfirm.unhangTimeLimit(0.1, { "resend %".format(defMsg).warn; this.sendMsg(addr, msg, *args) });
-
-			OSCdef.newMatching(defName, {|msg, time, addr, recvPort|
-				"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
-				conditionMsgConfirm.test = true;
-				conditionMsgConfirm.unhang;
-			}, defMsg, recvPort: port).oneShot;
-
-
-			NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
-
-			messageID = messageID + 1;
-			conditionMsgConfirm.hang;
-			// thisThread.stop;
-			// "send & confirm DONE".warn;
+			var cntLimit = 4;
+			while (
+				{ conditionMsgConfirm.test },
+				{
+					NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
+					if(cntLimit == 0) { conditionMsgConfirm.test = false };
+					// cntLimit.postln;
+					// conditionMsgConfirm.test.postln;
+					0.5.wait;
+					if(conditionMsgConfirm.test) { cntLimit = cntLimit - 1; "resend".warn; };
+				}
+			);
+			"send & confirm DONE".warn;
+			conditionMsgConfirm.test = true;
 		});
+
 	}
 }
 
