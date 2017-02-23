@@ -4,8 +4,7 @@ NetObject {
 	classvar messageID;
 
 	var <objectID;
-	// var conditionMsgConfirm;
-	var conditionMsgSemafor;
+	var sendMessageSemaphor;
 
 	*initClass {
 		port = 4002;
@@ -18,12 +17,8 @@ NetObject {
 
 	initObject { |id|
 		thisProcess.openUDPPort(port);
-
 		objectID = id ? this.identityHash;
-
-		conditionMsgSemafor = Semaphore(1);
-		// conditionMsgConfirm = Semaphore(1);
-		// conditionMsgConfirm = Condition.new(true);
+		sendMessageSemaphor = Semaphore(1);
 
 		OSCdef.newMatching(\NetObject, {|msg, time, addr, recvPort|
 			var msgID = msg[1];
@@ -39,21 +34,22 @@ NetObject {
 				"\n\t - args: %"
 			).format(msgID, objectID, msgType, args).postln;
 
-			this.class.postln;
+			// this.class.postln;
 			this.tryPerform(msgType, *args);
-
+			// {
+			// 0.05.wait;
 			NetAddr(addr.ip, recvPort).sendMsg(msgID.asSymbol);
+			// }.fork;
 
 		}, '/NetObject', recvPort: port).permanent_(true);
 	}
 
 	sendMsg { |addr, msg ... args|
-		Routine.run({
+		{
 			var defMsg = "MsgID_%".format(messageID).asSymbol;
 			var conditionMsgConfirm = Condition.new(true);
-			var cntLimit = 4;
-			conditionMsgSemafor.wait;
-			messageID = messageID + 1;
+			var cntLimit = 10;
+			sendMessageSemaphor.wait;
 
 			OSCdef.newMatching(defMsg, {|msg, time, addr, recvPort|
 				"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
@@ -65,27 +61,35 @@ NetObject {
 				{
 					NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
 					if(cntLimit == 0) { conditionMsgConfirm.test = false };
-					0.01.wait;
-					if(conditionMsgConfirm.test) { cntLimit = cntLimit - 1; "resend".warn; };
+					if(conditionMsgConfirm.test) {
+						0.01.wait;
+						cntLimit = cntLimit - 1;
+					};
 				}
 			);
-			// 5.wait;
+
 			"send & confirm DONE".warn;
 			conditionMsgConfirm.test = true;
-			conditionMsgSemafor.signal;
-		});
+			sendMessageSemaphor.signal;
+			messageID = messageID + 1;
+		}.fork;
+	}
 
+	sendMethodCall { |selector ... args|
+		// thisMethod.postln;
+		// var call = thisProcess.interpreter.cmdLine;
+		this.class.instVarNames.postln;
+		this.sendMsg("172.27.1.14", selector.asSymbol, *args);
 	}
 }
 
 NetTest : NetObject {
-	var semafor;
+	var <val;
 
 	*new { ^super.new.init }
 
 	init {
 		"init test done".postln;
-		semafor = Semaphore(1);
 	}
 
 	print { |...args|
@@ -93,15 +97,14 @@ NetTest : NetObject {
 		args.do({|one| "\t - %".format(one).postln })
 	}
 
-	semaforTest {|text|
-		Routine.run({
-			semafor.wait;
-			5.do({|i|
-				"%_%".format(text, i).postln;
-				1.wait;
-			});
-			semafor.signal;
-		})
+	setVal {|newVal|
+		val = newVal;
+		// this.sendMethodCall(thisMethod, newVal + 10);
+		this.sendMethodCall(\lateSetVal, newVal + 10);
+	}
+
+	lateSetVal {|newVal|
+		val = newVal;
 	}
 }
 
