@@ -4,7 +4,8 @@ NetObject {
 	classvar messageID;
 
 	var <objectID;
-	var conditionMsgConfirm;
+	// var conditionMsgConfirm;
+	var conditionMsgSemafor;
 
 	*initClass {
 		port = 4002;
@@ -19,6 +20,8 @@ NetObject {
 		thisProcess.openUDPPort(port);
 
 		objectID = id ? this.identityHash;
+
+		conditionMsgSemafor = Semaphore(1);
 		// conditionMsgConfirm = Semaphore(1);
 		// conditionMsgConfirm = Condition.new(true);
 
@@ -45,45 +48,61 @@ NetObject {
 	}
 
 	sendMsg { |addr, msg ... args|
-		// var defName = "NetObject_confirm_%".format(messageID).asSymbol;
-		var defMsg = "MsgID_%".format(messageID).asSymbol;
-		var thread;
-		conditionMsgConfirm = Condition.new(true);
-		messageID = messageID + 1;
-
-		OSCdef.newMatching(defMsg, {|msg, time, addr, recvPort|
-			"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
-			conditionMsgConfirm.test = false;
-		}, defMsg, recvPort: port).oneShot;
-
 		Routine.run({
+			var defMsg = "MsgID_%".format(messageID).asSymbol;
+			var conditionMsgConfirm = Condition.new(true);
 			var cntLimit = 4;
+			conditionMsgSemafor.wait;
+			messageID = messageID + 1;
+
+			OSCdef.newMatching(defMsg, {|msg, time, addr, recvPort|
+				"\\NetObject_confirm % | % | % | %".format(msg, time, addr, recvPort).warn;
+				conditionMsgConfirm.test = false;
+			}, defMsg, recvPort: port).oneShot;
+
 			while (
 				{ conditionMsgConfirm.test },
 				{
 					NetAddr(addr, port).sendMsg('/NetObject', defMsg, objectID, msg, *args);
 					if(cntLimit == 0) { conditionMsgConfirm.test = false };
-					// cntLimit.postln;
-					// conditionMsgConfirm.test.postln;
-					0.5.wait;
+					0.01.wait;
 					if(conditionMsgConfirm.test) { cntLimit = cntLimit - 1; "resend".warn; };
 				}
 			);
+			// 5.wait;
 			"send & confirm DONE".warn;
 			conditionMsgConfirm.test = true;
+			conditionMsgSemafor.signal;
 		});
 
 	}
 }
 
 NetTest : NetObject {
+	var semafor;
 
 	*new { ^super.new.init }
 
-	init { "init test done".postln }
+	init {
+		"init test done".postln;
+		semafor = Semaphore(1);
+	}
 
 	print { |...args|
 		"\nNetTest.print: ".postln;
 		args.do({|one| "\t - %".format(one).postln })
 	}
+
+	semaforTest {|text|
+		Routine.run({
+			semafor.wait;
+			5.do({|i|
+				"%_%".format(text, i).postln;
+				1.wait;
+			});
+			semafor.signal;
+		})
+	}
 }
+
+
