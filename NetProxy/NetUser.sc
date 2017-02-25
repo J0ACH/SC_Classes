@@ -1,16 +1,17 @@
-NetUser {
+NetUser : NetObject {
+
 	classvar singleton;
 	classvar answerDelayLimit;
 
 	var name;
 	var netMask, netPort;
-	var netProfiles;
+	var <netProfiles;
 
 	var conditionNetMask, conditionNetProfiles;
 
 	*initClass {
 		singleton = nil;
-		answerDelayLimit = 0.5;
+		answerDelayLimit = 1;
 	}
 
 	*new {|userName|
@@ -18,25 +19,14 @@ NetUser {
 		^singleton;
 	}
 
-	*free {
-		if( singleton.notNil ) {
-			singleton.prSend('/user/leaved', singleton.userName);
-			OSCdef(\user_connected).free;
-			OSCdef(\user_isHere).free;
-			OSCdef(\user_leaved).free;
-			singleton = nil;
-		};
-		^nil
-	}
-
 	initUser {|userName|
 
 		if(userName.isNil) { this.getNetUserName } { name = userName };
-		netPort = 4002;
-		thisProcess.openUDPPort(netPort);
 
 		conditionNetMask = Condition.new();
 		conditionNetProfiles = Condition.new();
+
+		netProfiles = IdentityDictionary.new;
 
 		Routine.run({
 			this.getNetMask;
@@ -44,8 +34,12 @@ NetUser {
 			conditionNetMask.hang;
 			// "conditionNetMask unhang".warn;
 			// "conditionNetProfiles hang".warn;
+			"NetUser scan network for other players".warn;
 			this.getNetProfiles;
+
 			conditionNetProfiles.hang;
+			"NetUser scan network done".warn;
+			this.players;
 			// "conditionNetProfiles unhang".warn;
 			// "NetUser.initUser DONE".warn;
 		});
@@ -75,87 +69,64 @@ NetUser {
 		NetAddr.broadcastFlag = tempBroadcast;
 	}
 
-	prSenderFilter{ |addr, fnc| if(addr.ip != this.netIP) { ^fnc.value } { ^nil } }
-
-	prSend {|path, args| if(netProfiles.notNil) {
-		netProfiles.keysDo({|addr| NetAddr(addr, netPort).sendMsg(path.asSymbol, args) })
-	}}
-
-	sendConfirmedMsg { |addr, msg|
-		/*
-		OSCdef.newMatching(\netMsg_confirm, {|msg, time, addr, recvPort|
-			// "\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
-			this.prSenderFilter(addr, {
-				var sender = msg[1];
-				var net = NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
-
-				"Player % has joined to session".format(sender).warn;
-			})
-		}, msg, recvPort: port).oneShot;
-		*/
-		NetAddr(addr, netPort).sendMsg('/netMsg', msg);
-	}
-
-	initReciver {
-		OSCdef.newMatching(\netMsg, {|msg, time, addr, recvPort|
-			"\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
-
-		}, '/netMsg', recvPort: netPort).permanent_(true);
-	}
-
-
-
 	getNetProfiles {
-		var answered = IdentityDictionary.new();
 
+		// var answeredProfiles = IdentityDictionary.new();
+		// var answeredProfiles = 0;
+		var upperLimitIP = 230;
+		upperLimitIP.do({|i|
+			// this.sendMsg(netMask.copy.put(3,i+1).join("."),	\netUserConnected, this.netIP.asString,	name );
+			this.sendMsgFunction(
+				{|addr, sender|
+					// "Player % is here too".format(addr).warn;
+					// answeredProfiles.put(addr.asSymbol, sender);
+				},
+				{|addr, sender, msg, args|
+					// "failed addr:% fnc: %".format(addr, msg).postln;
+					// addr.asString.split($.)[3].postln;
+					if( addr.asString.split($.)[3].asInt == upperLimitIP) {
+						// "done".warn;
+						conditionNetProfiles.test = true;
+						conditionNetProfiles.unhang;
+					}
+				},
+				netMask.copy.put(3,i+1).join("."),	\netUserConnected, this.netIP.asString,	name );
+			// (i+1).postln;
+		});
+/*
 		conditionNetProfiles.unhangTimeLimit(answerDelayLimit, {
-			netProfiles = answered;
+			// netProfiles = answeredProfiles;
+
 			conditionNetProfiles.test = true;
 			conditionNetProfiles.unhang;
 		});
-
-		OSCdef.newMatching(\user_connected, {|msg, time, addr, recvPort|
-			// "\user_connected % | % | % | %".format(msg, time, addr, recvPort).warn;
-			this.prSenderFilter(addr, {
-				var sender = msg[1];
-				var net = NetAddr(addr.ip, netPort).sendMsg('/user/isHere', name);
-				"Player % has joined to session".format(sender).warn;
-			})
-		}, '/user/connected', recvPort: netPort).permanent_(true);
-
-		OSCdef.newMatching(\user_isHere, {|msg, time, addr, recvPort|
-			// "\user_isHere % | % | % | %".format(msg, time, addr, recvPort).warn;
-			this.prSenderFilter(addr, {
-				var sender = msg[1];
-				answered.put(addr.ip, sender);
-				"Player % is here too".format(sender).warn;
-			})
-		}, '/user/isHere', recvPort: netPort).permanent_(true);
-
-		OSCdef.newMatching(\user_leaved, {|msg, time, addr, recvPort|
-			// "\user_leaved % | % | % | %".format(msg, time, addr, recvPort).warn;
-			this.prSenderFilter(addr, {
-				var sender = msg[1];
-				answered.removeAt(addr.ip);
-				"Player % leaved from session".format(sender).warn;
-			})
-		}, '/user/leaved', recvPort: netPort).permanent_(true);
-
-		// 230.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
-		254.do({|i| NetAddr(netMask.copy.put(3,i+1).join("."), netPort).sendMsg('/user/connected', name); });
-		// NetAddr("10.0.0.35", 8000).sendMsg('/user/connected', name);
+		*/
 	}
 
-	*userName { if(singleton.notNil) { ^singleton.userName } { ^nil } }
-	userName  { if(singleton.notNil) { ^name } { ^nil } }
-
 	netIP { if(singleton.notNil && netMask.notNil) { ^netMask.join(".") } { ^nil } }
+
+	netUserConnected {|addr, sender|
+		"Player % has joined to session".format(sender).warn;
+		this.sendMsg(addr, \netUserIsHere, this.netIP.asString, name);
+		this.addPlayer(addr, sender);
+	}
+
+	netUserIsHere {|addr, sender|
+		"Player % is here too".format(sender).warn;
+		// answeredProfiles.put(addr.asSymbol, sender);
+		this.addPlayer(addr, sender);
+	}
+
+	addPlayer {|addr, sender|
+		netProfiles.put(addr.asSymbol, sender);
+
+	}
 
 	printOn { |stream|	stream << this.class.name << "('" << name << "')"; }
 
 	players {
 		if(singleton.notNil) {
-			"NetUser info \n\t - name: % \n\t - netIP: %".format(name, this.netIP).postln;
+			"NetUser info \n\t - name: % \n\t - netIP: % \n\t - objID: %".format(name, this.netIP, this.objectID).postln;
 			if(netProfiles.notNil)
 			{
 				"\n\nother profiles:".postln;
@@ -166,7 +137,6 @@ NetUser {
 			}
 		} { ^nil }
 	}
-
 }
 
 + Condition {
