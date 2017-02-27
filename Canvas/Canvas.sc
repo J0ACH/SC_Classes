@@ -2,7 +2,7 @@ Canvas {
 
 	classvar <>library;
 
-	var win;
+	var <win;
 
 	*initClass {
 		library = IdentityDictionary.new;
@@ -50,12 +50,12 @@ Canvas {
 
 	view {
 		case
-		{ win.isKindOf(Window) } { ^win.view }
+		{ win.isKindOf(Window) } { ^win.view.findWindow }
 		{ win.isKindOf(View) } { ^win };
 	}
 
 	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
-	background { ^this.view.background }//.linlin(0,1,0,255) }
+	background { ^this.view.background }
 
 	alpha_ {|a|
 		case
@@ -65,21 +65,23 @@ Canvas {
 			this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
 		}
 	}
-	alpha { ^this.view.alpha }
+	// alpha { ^this.view.alpha }
 
 	size_ {|x, y| this.view.fixedSize_(Size(x, y)) }
 	size { ^this.view.bounds.size }
 
-	// origin_ {|x, y| win.view.bounds.origin }
-	origin {
-		case
-		{ win.isKindOf(Window) } { ^win.view.findWindow.bounds.origin }
-		{ win.isKindOf(View) } { ^win.bounds.origin };
-	}
+	origin_ {|x, y|	this.view.bounds_(Rect(x, y, this.size.width, this.size.height)) }
+	origin { ^this.view.bounds.origin }
 
 	// screenOrigin_ {|x, y| win.bounds.origin_(Point(x, y)); }
 	// screenOrigin { ^win.bounds.origin }
 
 	printOn { |stream|	stream << this.class.name << "('" << win.name << "')"; }
+
+	close {
+		this.view.close;
+		library.remove
+	}
+	onClose {|fnc| this.view.onClose_(fnc) }
 
 }
