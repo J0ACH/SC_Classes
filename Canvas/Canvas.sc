@@ -54,6 +54,8 @@ Canvas {
 		{ win.isKindOf(View) } { ^win };
 	}
 
+	name { ^this.view.name }
+
 	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
 	background { ^this.view.background }
 
@@ -80,8 +82,12 @@ Canvas {
 
 	close {
 		this.view.close;
-		library.remove
+		library.removeAt(this.name.asSymbol);
 	}
 	onClose {|fnc| this.view.onClose_(fnc) }
+
+	onMouseButton {|fnc|
+
+	}
 
 }
