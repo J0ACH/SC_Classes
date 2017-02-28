@@ -2,7 +2,7 @@ Canvas {
 
 	classvar <>library;
 
-	var <win;
+	var <win, <view;
 
 	*initClass {
 		library = IdentityDictionary.new;
@@ -34,27 +34,35 @@ Canvas {
 		if(parent.isNil)
 		{
 			win = Window(
-				name: name,
+				name: "win_%".format(name),
 				bounds: Rect(1200, 750, 400, 200),
 				border: false
 			);
 			win.front;
 			win.view.alwaysOnTop_(true);
+
+			view = win.view;
+			view.name = name;
 		}
 		{
-			win = View(parent.view, Rect(5,5,100,100));
-			win.name_(name);
+			win = nil;
+			view = View(parent.view, Rect(5,5,100,100));
+			view.name = name;
+			// view.postln;
 		};
-		this.background_(255,255,255);
+		// };
+		// this.background_(255,255,255);
 	}
 
+	/*
 	view {
 		case
 		{ win.isKindOf(Window) } { ^win.view.findWindow }
 		{ win.isKindOf(View) } { ^win };
 	}
+	*/
 
-	name { ^this.view.name }
+	name { ^view.name }
 
 	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
 	background { ^this.view.background }
@@ -78,16 +86,27 @@ Canvas {
 	// screenOrigin_ {|x, y| win.bounds.origin_(Point(x, y)); }
 	// screenOrigin { ^win.bounds.origin }
 
-	printOn { |stream|	stream << this.class.name << "('" << win.name << "')"; }
+	printOn { |stream|	stream << this.class.name << "('" << view.name << "')"; }
 
 	close {
-		this.view.close;
+		// "close %".format(this.name).postln;
+		// this.view.children.postln;
+		this.view.children.do({|oneChild|
+			oneChild.close;
+			library.removeAt(oneChild.name.asSymbol);
+			// oneChild.changed(\close, this.name);
+		});
 		library.removeAt(this.name.asSymbol);
+		this.view.close;
+		// this.changed(\close, this.name); // object dependency update call
 	}
 	onClose {|fnc| this.view.onClose_(fnc) }
 
 	onMouseButton {|fnc|
-
+		view.acceptsMouse = true;
+		view.mouseDownAction = fnc;
 	}
+
+
 
 }
