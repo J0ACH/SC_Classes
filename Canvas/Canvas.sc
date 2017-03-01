@@ -2,7 +2,7 @@ Canvas {
 
 	classvar <>library;
 
-	var <win, <view;
+	var <view;
 
 	*initClass {
 		library = IdentityDictionary.new;
@@ -14,10 +14,7 @@ Canvas {
 		if(name.notNil)
 		{
 			singleton = this.exist(name);
-			if(singleton.isNil) {
-				singleton = super.new.initCanvas(name, parent);
-				library.put(name, singleton);
-			};
+			if(singleton.isNil) { singleton = super.new.initCanvas(name, parent) };
 			^singleton;
 		}
 		{ ^nil }
@@ -33,47 +30,43 @@ Canvas {
 	initCanvas {|name, parent|
 		if(parent.isNil)
 		{
-			win = Window(
-				name: "win_%".format(name),
+			var win = Window(
+				name: name.asSymbol,
 				bounds: Rect(1200, 750, 400, 200),
 				border: false
 			);
 			win.front;
 			win.view.alwaysOnTop_(true);
-
-			view = win.view;
-			view.name = name;
+			view = win.asView;
 		}
 		{
-			win = nil;
-			view = View(parent.view, Rect(5,5,100,100));
-			view.name = name;
-			// view.postln;
+			view = UserView(parent.view, Rect(0,0,100,100));
+			view.name = name.asSymbol;
 		};
-		// };
-		// this.background_(255,255,255);
+
+		library.put(name.asSymbol, this);
+		view.addAction({|view| library.removeAt(name.asSymbol) }, \onClose);
+
+
+		view.addAction({|view, x, y| this.onMouseDown(view.name, x, y) }, \mouseDownAction);
+
 	}
 
-	/*
-	view {
-		case
-		{ win.isKindOf(Window) } { ^win.view.findWindow }
-		{ win.isKindOf(View) } { ^win };
-	}
-	*/
+	close {	this.view.close }
 
 	name { ^view.name }
 
-	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
-	background { ^this.view.background }
 
+	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
+	/*
+	background { ^this.view.background }
 	alpha_ {|a|
-		case
-		{ win.isKindOf(Window) } { win.alpha_(a) }
-		{ win.isKindOf(View) } {
-			var color = this.background;
-			this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
-		}
+	case
+	{ win.isKindOf(Window) } { win.alpha_(a) }
+	{ win.isKindOf(View) } {
+	var color = this.background;
+	this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
+	}
 	}
 	// alpha { ^this.view.alpha }
 
@@ -82,31 +75,15 @@ Canvas {
 
 	origin_ {|x, y|	this.view.bounds_(Rect(x, y, this.size.width, this.size.height)) }
 	origin { ^this.view.bounds.origin }
+	*/
 
 	// screenOrigin_ {|x, y| win.bounds.origin_(Point(x, y)); }
 	// screenOrigin { ^win.bounds.origin }
 
 	printOn { |stream|	stream << this.class.name << "('" << view.name << "')"; }
 
-	close {
-		// "close %".format(this.name).postln;
-		// this.view.children.postln;
-		this.view.children.do({|oneChild|
-			oneChild.close;
-			library.removeAt(oneChild.name.asSymbol);
-			// oneChild.changed(\close, this.name);
-		});
-		library.removeAt(this.name.asSymbol);
-		this.view.close;
-		// this.changed(\close, this.name); // object dependency update call
+	onMouseDown {|name, x, y|
+		"mouse click view % [%, %]".format(name, x, y).postln
 	}
-	onClose {|fnc| this.view.onClose_(fnc) }
-
-	onMouseButton {|fnc|
-		view.acceptsMouse = true;
-		view.mouseDownAction = fnc;
-	}
-
-
 
 }
