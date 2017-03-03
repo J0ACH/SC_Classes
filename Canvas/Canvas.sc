@@ -8,16 +8,20 @@ Canvas {
 		library = IdentityDictionary.new;
 	}
 
-	*new { |name, parent|
+	*new { |parent, name|
 		var singleton;
 
 		if(name.notNil)
 		{
 			singleton = this.exist(name);
-			if(singleton.isNil) { singleton = super.new.initCanvas(name, parent) };
-			^singleton;
+			if(singleton.isNil) { singleton = super.new.initCanvas(name, parent).init };
+			library.put(name.asSymbol, singleton);
 		}
-		{ ^nil }
+		{
+			if(parent.isNil) { ^nil };
+			singleton = super.new.initCanvas(name, parent).init;
+		}
+		^singleton;
 	}
 
 	*exist { |name|
@@ -45,17 +49,20 @@ Canvas {
 			view.name = name.asSymbol;
 		};
 
-		library.put(name.asSymbol, this);
+
 		view.addAction({|view| library.removeAt(name.asSymbol) }, \onClose);
 
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
 		view.addAction({|view, x, y| this.onMouseDown(view.name, x, y) }, \mouseDownAction);
+		view.addAction({|view, x, y| this.onMouseUp(view.name, x, y) }, \mouseUpAction);
 		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
-		view.addAction({|view| this.onEnter(view); view.refresh; ^true; }, \mouseEnterAction);
-		view.addAction({|view| this.onLeave(view); view.refresh; ^true; }, \mouseLeaveAction);
-
+		view.addAction({|view| this.onEnter(view); view.refresh; }, \mouseEnterAction);
+		view.addAction({|view| this.onLeave(view); view.refresh; }, \mouseLeaveAction);
+		// view.addAction({|view| this.onResize(view); view.refresh; }, \mouseLeaveAction);
 	}
+
+	init { }
 
 	close {	this.view.close }
 
@@ -81,6 +88,12 @@ Canvas {
 	size_ {|x, y| this.view.fixedSize_(Size(x, y)) }
 	size { ^this.view.bounds.size }
 
+	// width_ {|x, y| this.view.fixedSize_(Size(x, y)) }
+	width { ^this.view.bounds.size.width }
+
+	// height_ {|x, y| this.view.fixedSize_(Size(x, y)) }
+	height { ^this.view.bounds.size.height }
+
 	origin_ {|x, y|
 		var rect = Rect(x, y, this.size.width, this.size.height);
 		case
@@ -102,6 +115,10 @@ Canvas {
 		"mouse click view % [%, %]".format(name, x, y).postln
 	}
 
+	onMouseUp {|name, x, y|
+		"mouse up view % [%, %]".format(name, x, y).postln
+	}
+
 	onMouseOver {|name, x, y|
 		"mouse click view % [%, %]".format(name, x, y).postln
 	}
@@ -109,9 +126,12 @@ Canvas {
 	onEnter {|view| "mouse enter Canvas('%')".format(view.name).postln; }
 	onLeave {|view| "mouse leave Canvas('%')".format(view.name).postln; }
 
-	onDraw { |fnc|
-		view.drawFunc_({|view| fnc.value(view) });
-		view.refresh;
+	draw { |fnc|
+		view.drawFunc_({|view|
+			fnc.value(view);
+			// this.onDraw;
+			// view.refresh;
+		});
 		/*
 		{|uview|
 		Pen.strokeColor_( Color.white );
@@ -121,6 +141,11 @@ Canvas {
 		})
 		*/
 	}
+/*
+	onDraw {
+		// "view onDraw".postln
+	}
+*/
 
 }
 
