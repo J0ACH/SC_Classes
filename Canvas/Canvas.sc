@@ -66,7 +66,8 @@ Canvas {
 		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
 
 		canvasView.addAction({|v, x, y, modifer| this.onMouseMove(this, x, y, modifer) }, \mouseMoveAction);
-		// view.addAction({|view| this.onResize(view); view.refresh; }, \mouseLeaveAction);
+
+		canvasView.addAction({|v| this.onResize(this) }, \onResize);
 
 	}
 
@@ -150,9 +151,12 @@ Canvas {
 	onLeave {|canvas| "%.onLeave".format(canvas).postln; }
 
 	onMouseMove {|canvas, x, y, modifer|
-		"mouse move Canvas('%') [x:%,y:%, mod:%]".format(canvas, x, y, modifer).postln;
+		"%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
 	}
 
+	onResize {|canvas|
+		// "%.onResize [w:%, h:%]".format(canvas, canvas.width, canvas.height).postln;
+	}
 
 	draw { |fnc|
 		canvasView.drawFunc_({|view|
