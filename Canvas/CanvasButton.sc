@@ -6,6 +6,7 @@ CanvasButton : Canvas {
 	var >mouseDownAction;
 
 	init {
+
 		mouseDownAction = nil;
 		string = "CanvasButton";
 		backColor = Color.new255(80,80,80);
@@ -22,9 +23,10 @@ CanvasButton : Canvas {
 		});
 
 		// view.addAction({|view, x, y| this.onPress }, \mouseDownAction);
+
 	}
 
-	string_ {|txt| string = txt; view.refresh; }
+	string_ {|txt| string = txt; this.view.refresh; }
 	//
 	onEnter {|view| fillColor = overColor; "mouse enter CanvasButton('%')".format(view.name).postln; }
 	onLeave {|view| fillColor = backColor; "mouse enter CanvasButton('%')".format(view.name).postln; }

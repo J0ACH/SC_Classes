@@ -2,13 +2,16 @@ Canvas {
 
 	classvar <>library;
 
-	var <view, canvasParent;
+	// var <view;
+	var canvasParent, canvasView;
 
 	*initClass {
 		library = IdentityDictionary.new;
 	}
 
 	*new { |x, y, w, h, parent = nil, name = nil|
+		// ^super.new.initCanvas(x, y, w, h, parent, name).init;
+		// /*
 		var instance = this.exist(name);
 		if ( instance.isNil )
 		{ instance = super.new.initCanvas(x, y, w, h, parent, name).init }
@@ -19,6 +22,7 @@ Canvas {
 		};
 		if ( name.notNil ) { library.put(name.asSymbol, instance) }
 		^instance;
+		// */
 	}
 
 	*exist { |name|
@@ -42,87 +46,93 @@ Canvas {
 			win.front;
 			win.view.alwaysOnTop_(true);
 			win.acceptsMouseOver_(true);
-			view = win.asView;
+			canvasView = win.asView;
 		}
 		{
-			view = UserView(parent.view, Rect(x, y, w, h));
-			view.name = name.asSymbol;
+			canvasView = UserView(parent.view, Rect(x, y, w, h));
+			canvasView.name = name.asSymbol;
 		};
 
+		this.background_(90,90,90);
 
-		view.addAction({|view| library.removeAt(name.asSymbol) }, \onClose);
+		canvasView.addAction({|v| library.removeAt(name.asSymbol) }, \onClose);
 
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
-		view.addAction({|view, x, y| this.onMouseDown(view.name, x, y) }, \mouseDownAction);
-		view.addAction({|view, x, y| this.onMouseUp(view.name, x, y) }, \mouseUpAction);
+		canvasView.addAction({|v, x, y| this.onMouseDown(v.name, x, y) }, \mouseDownAction);
+		canvasView.addAction({|v, x, y| this.onMouseUp(v.name, x, y) }, \mouseUpAction);
 		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
-		view.addAction({|view| this.onEnter(view); view.refresh; }, \mouseEnterAction);
-		view.addAction({|view| this.onLeave(view); view.refresh; }, \mouseLeaveAction);
+		canvasView.addAction({|v| this.onEnter(v); v.refresh; }, \mouseEnterAction);
+		canvasView.addAction({|v| this.onLeave(v); v.refresh; }, \mouseLeaveAction);
 
-		view.addAction({|view, x, y, modifer| this.onMouseMove(view.name, x, y, modifer) }, \mouseMoveAction);
+		canvasView.addAction({|v, x, y, modifer| this.onMouseMove(v.name, x, y, modifer) }, \mouseMoveAction);
 		// view.addAction({|view| this.onResize(view); view.refresh; }, \mouseLeaveAction);
+
 	}
 
 	init { }
-	close {	this.view.close }
-
-	name_ { |txt| view.name_(txt) }
-	name { ^view.name }
 
 	parent_ { |parent|
 		if(parent.notNil)
 		{
 			canvasParent = parent;
-			view.setParent(parent.view);
-			view.front;
+			canvasView.setParent(parent.view);
+			canvasView.front;
 		}
 	}
-	parent { ^this.view.parent }
-	// parent { ^canvasParent }
+	parent { ^canvasParent }
 
-	background_ {|r, g, b, a = 1| this.view.background_(Color.new255(r,g,b,a * 255)) }
-	background { ^this.view.background }
+	view { if(canvasView.isClosed) { ^nil } { ^canvasView } }
+	view_ {|newVal| canvasView = newVal }
+
+	close {	canvasView.close }
+
+	name_ { |txt| canvasView.name_(txt) }
+	name { ^canvasView.name  }
+
+	background_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
+	background { ^canvasView.background }
 
 	alpha_ {|a|
 		case
-		{ view.isKindOf(TopView) } { this.view.alpha_(a) }
-		{ view.isKindOf(UserView) } {
+		{ canvasView.isKindOf(TopView) } { canvasView.alpha_(a) }
+		{ canvasView.isKindOf(UserView) } {
 			var color = this.background;
 			this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
 		}
 	}
 	alpha {
 		case
-		{ view.isKindOf(TopView) } { ^this.view.alpha }
-		{ view.isKindOf(UserView) } { ^this.background.alpha }
+		{ canvasView.isKindOf(TopView) } { ^canvasView.alpha }
+		{ canvasView.isKindOf(UserView) } { ^this.background.alpha }
 	}
 
-	size_ {|x, y| this.view.fixedSize_(Size(x, y)) }
-	size { ^this.view.bounds.size }
+	size_ {|x, y| canvasView.fixedSize_(Size(x, y)) }
+	size { ^canvasView.bounds.size }
 
-	// width_ {|x, y| this.view.fixedSize_(Size(x, y)) }
-	width { ^this.view.bounds.size.width }
+	width_ {|x| canvasView.fixedWidth_(x) }
+	width { ^canvasView.bounds.size.width }
 
-	// height_ {|x, y| this.view.fixedSize_(Size(x, y)) }
-	height { ^this.view.bounds.size.height }
+	height_ {|y| canvasView.fixedHeight_(y) }
+	height { ^canvasView.bounds.size.height }
 
 	origin_ {|x, y|
 		var rect = Rect(x, y, this.size.width, this.size.height);
 		case
-		{ view.isKindOf(TopView) } { ^this.view.findWindow.bounds_(Window.flipY(rect)) }
-		{ view.isKindOf(UserView) } { ^this.view.moveTo(x, y)  };
+		{ canvasView.isKindOf(TopView) } { ^canvasView.findWindow.bounds_(Window.flipY(rect)) }
+		{ canvasView.isKindOf(UserView) } { ^canvasView.moveTo(x, y)  };
 	}
 	origin {
+		if(canvasView.isClosed) {^nil};
 		case
-		{ view.isKindOf(TopView) } { ^this.view.findWindow.bounds.origin }
-		{ view.isKindOf(UserView) } { ^this.view.bounds.origin  }
+		{ canvasView.isKindOf(TopView) } { ^canvasView.findWindow.bounds.origin }
+		{ canvasView.isKindOf(UserView) } { ^canvasView.bounds.origin  }
 	}
 
 	// screenOrigin_ {|x, y| win.bounds.origin_(Point(x, y)); }
-	screenOrigin {  ^view.mapToGlobal(Point(0,0)) }
+	screenOrigin {  ^canvasView.mapToGlobal(Point(0,0)) }
 
-	printOn { |stream|	stream << this.class.name << "('" << view.name << "')"; }
+	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
 
 	onMouseDown {|name, x, y|
 		"mouse click view % [%, %]".format(name, x, y).postln
@@ -145,7 +155,7 @@ Canvas {
 
 
 	draw { |fnc|
-		view.drawFunc_({|view|
+		canvasView.drawFunc_({|view|
 			fnc.value(view);
 			// this.onDraw;
 			// view.refresh;

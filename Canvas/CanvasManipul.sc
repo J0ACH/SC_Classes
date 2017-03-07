@@ -1,8 +1,8 @@
 CanvasMove : Canvas {
 
-	var mouseDownPosition, mouseDownOrigin;
+	var mouseDownPosition;
 
-	*new { |parent|	^super.new(5, 5, parent.width-10, 30, parent).init(parent) }
+	*new { |parent|	^super.new(5, 5, parent.width-10, 20, parent).init(parent) }
 
 	init { |parent|
 		this.parent_(parent);
@@ -10,29 +10,22 @@ CanvasMove : Canvas {
 		this.name = "CanvasMove";
 	}
 
-	onMouseDown {|name, x, y|
-		mouseDownPosition = Point(x, y) ;
-		mouseDownOrigin = this.origin;
-	}
+	onMouseDown {|name, x, y| mouseDownPosition = Point(x, y) }
 
 	onMouseMove {|view, x, y, modifer|
-		var ptX, ptY, rect;
-		"mouse move Canvas('%') [x:%,y:%, mod:%]".format(view, x, y, modifer).postln;
+		var ptX, ptY;
 		case
-		{ this.parent.isKindOf(TopView) } {
+		{ this.parent.view.isKindOf(TopView) } {
 			ptX = this.screenOrigin.x + x - mouseDownPosition.x;
 			ptY = this.screenOrigin.y + y - mouseDownPosition.y;
-			rect = Rect(ptX, ptY, this.parent.bounds.width, this.parent.bounds.height);
-			this.parent.findWindow.bounds_(Window.flipY(rect))
+			this.parent.origin_(ptX, ptY);
 		}
-		{ this.parent.isKindOf(UserView) } {
-			ptX = this.origin.x + x - mouseDownOrigin.x;
-			ptY = this.origin.y + y - mouseDownOrigin.y;
-			rect = Rect(ptX, ptY, this.parent.bounds.width, this.parent.bounds.height);
-			this.parent.bounds_(rect);
-			// this.parent.origin_(ptX, ptY);
+		{ this.parent.view.isKindOf(UserView) } {
+			ptX = this.parent.origin.x + x - mouseDownPosition.x;
+			ptY = this.parent.origin.y + y - mouseDownPosition.y;
+
 		};
-		"screen [x:%,y:%]".format(ptX, ptY).postln;
+		this.parent.origin_(ptX, ptY);
 	}
 }
 
