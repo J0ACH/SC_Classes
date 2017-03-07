@@ -59,13 +59,13 @@ Canvas {
 
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
-		canvasView.addAction({|v, x, y| this.onMouseDown(v.name, x, y) }, \mouseDownAction);
-		canvasView.addAction({|v, x, y| this.onMouseUp(v.name, x, y) }, \mouseUpAction);
+		canvasView.addAction({|v, x, y| this.onMouseDown(this, x, y) }, \mouseDownAction);
+		canvasView.addAction({|v, x, y| this.onMouseUp(this, x, y) }, \mouseUpAction);
 		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
-		canvasView.addAction({|v| this.onEnter(v); v.refresh; }, \mouseEnterAction);
-		canvasView.addAction({|v| this.onLeave(v); v.refresh; }, \mouseLeaveAction);
+		canvasView.addAction({|v| this.onEnter(this); v.refresh; }, \mouseEnterAction);
+		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
 
-		canvasView.addAction({|v, x, y, modifer| this.onMouseMove(v.name, x, y, modifer) }, \mouseMoveAction);
+		canvasView.addAction({|v, x, y, modifer| this.onMouseMove(this, x, y, modifer) }, \mouseMoveAction);
 		// view.addAction({|view| this.onResize(view); view.refresh; }, \mouseLeaveAction);
 
 	}
@@ -134,23 +134,23 @@ Canvas {
 
 	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
 
-	onMouseDown {|name, x, y|
-		"mouse click view % [%, %]".format(name, x, y).postln
+	onMouseDown {|canvas, x, y|
+		"%.onMouseDown [%, %]".format(canvas, x, y).postln
 	}
 
-	onMouseUp {|name, x, y|
-		"mouse up view % [%, %]".format(name, x, y).postln
+	onMouseUp {|canvas, x, y|
+		"%.onMouseUp [%, %]".format(canvas, x, y).postln
 	}
 
-	onMouseOver {|name, x, y|
-		"mouse click view % [%, %]".format(name, x, y).postln
+	onMouseOver {|canvas, x, y|
+		"%.onMouseOver [%, %]".format(canvas, x, y).postln
 	}
 
-	onEnter {|view| "mouse enter Canvas('%')".format(view.name).postln; }
-	onLeave {|view| "mouse leave Canvas('%')".format(view.name).postln; }
+	onEnter {|canvas| "%.onEnter".format(canvas).postln; }
+	onLeave {|canvas| "%.onLeave".format(canvas).postln; }
 
-	onMouseMove {|view, x, y, modifer|
-		"mouse move Canvas('%') [x:%,y:%, mod:%]".format(view, x, y, modifer).postln;
+	onMouseMove {|canvas, x, y, modifer|
+		"mouse move Canvas('%') [x:%,y:%, mod:%]".format(canvas, x, y, modifer).postln;
 	}
 
 
