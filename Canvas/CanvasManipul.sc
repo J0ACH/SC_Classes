@@ -16,11 +16,11 @@ CanvasMove : Canvas {
 	onMouseDown {|name, x, y|
 		case
 		{ this.parent.view.isKindOf(TopView) } {
-		mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness)
-			}
+			mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness)
+		}
 		{ this.parent.view.isKindOf(UserView) } {
-		mouseDownPosition = Point(x,y)
-			};
+			mouseDownPosition = Point(x,y)
+		};
 	}
 
 	onMouseMove {|view, x, y, modifer|
@@ -48,7 +48,7 @@ CanvasSize {
 	classvar <thickness = 20;
 
 	var parent;
-	var mouseDownPosition;
+	var mouseDownPosition, mouseDownSize;
 	var manipuls;
 
 	*new { |parent ... positions| ^super.new().init(parent)	}
@@ -68,7 +68,7 @@ CanvasSize {
 			var oneManipul = Canvas(0, 0, 50, 50, parent);
 			oneManipul.name = "CanvasSize_%".format(side);
 			oneManipul.background_(150,30,30);
-			oneManipul.view.addAction({|v, x, y| this.onMouseDown(oneManipul, x, y) }, \mouseDownAction);
+			oneManipul.view.addAction({|v, x, y| this.onMouseDown(oneManipul, x, y, parent) }, \mouseDownAction);
 			oneManipul.view.addAction({|v, x, y, modifer| this.onMouseMove(oneManipul, side, x, y, modifer) }, \mouseMoveAction);
 			manipuls.put(side.asSymbol, oneManipul);
 		});
@@ -76,13 +76,25 @@ CanvasSize {
 		this.onResize(parent);
 	}
 
-	onMouseDown {|manipul, x, y| mouseDownPosition = Point(manipul.width + offset - x , manipul.height + offset - y) }
+	onMouseDown {|manipul, x, y, p|
+		/*
+		case
+		{ parent.view.isKindOf(TopView) } {
+			mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
+		}
+		{ parent.view.isKindOf(UserView) } {
+			mouseDownPosition = Point(x,y)
+		};
+*/
+		mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness)
+		mouseDownSize = p.size;
+	}
 	onMouseMove {|manipul, side, x, y, modifer|
 		// var ptX, ptY;
 		var ptX = manipul.origin.x + x + mouseDownPosition.x;
 		var ptY = manipul.origin.y + y + mouseDownPosition.y;
 
-		"%.onMouseMove [side: %, x:%, y:%]".format(manipul, side, x, y).postln;
+		"%.onMouseMove [x:%, y:%]".format(manipul, x, y).postln;
 
 		case
 		{ side == \right } {
@@ -99,22 +111,32 @@ CanvasSize {
 			parent.height_(ptY);
 		}
 		{ side == \left } {
-			// parent.width_(ptX);
-			ptX = parent.screenOrigin.x + x - mouseDownPosition.x;
-			/*
+			parent.width_(mouseDownSize.width - ptX);
+
+			case
+		{ parent.view.isKindOf(TopView) } {
+			mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
+		}
+		{ parent.view.isKindOf(UserView) } {
+			mouseDownPosition = Point(x,y)
+		};
+
+			// parent.origin_(mouseDownPosition.x - ptX);
+			// parent.originX_(ptX);
+/*
 			case
 			{ parent.view.isKindOf(TopView) } {
-			ptX = parent.screenOrigin.x + x - mouseDownPosition.x;
-			ptY = parent.screenOrigin.y + y - mouseDownPosition.y;
+				ptX = parent.screenOrigin.x + x - mouseDownPosition.x;
+				// parent.origin_(ptX, parent.screenOrigin.y)
 			}
 			{ parent.view.isKindOf(UserView) } {
-			ptX = parent.origin.x + x - mouseDownPosition.x;
-			ptY = parent.origin.y + y - mouseDownPosition.y;
+				ptX = manipul.origin.x + x + mouseDownPosition.x;
+				// parent.origin_(ptX, mouseDownPosition.y)
 			};
-			*/
+*/
 			// parent.origin_(ptX, ptY);
 			// ptY = manipul.origin.y + y + mouseDownPosition.y;
-			parent.origin_(ptX, parent.screenOrigin.y)
+			// parent.origin_(ptX, parent.screenOrigin.y)
 		};
 	}
 

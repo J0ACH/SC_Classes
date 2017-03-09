@@ -130,6 +130,12 @@ Canvas {
 		{ canvasView.isKindOf(UserView) } { ^canvasView.bounds.origin  }
 	}
 
+	originX_ {|x| this.origin_(x, this.origin.y) }
+	originX { ^this.origin.x }
+
+	originY_ {|y| this.origin_(this.origin.x, y) }
+	originY { ^this.origin.y }
+
 	// screenOrigin_ {|x, y| win.bounds.origin_(Point(x, y)); }
 	screenOrigin {  ^canvasView.mapToGlobal(Point(0,0)) }
 
