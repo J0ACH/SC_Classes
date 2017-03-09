@@ -151,7 +151,7 @@ Canvas {
 	onLeave {|canvas| "%.onLeave".format(canvas).postln; }
 
 	onMouseMove {|canvas, x, y, modifer|
-		"%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
+		// "%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
 	}
 
 	onResize {|canvas|
