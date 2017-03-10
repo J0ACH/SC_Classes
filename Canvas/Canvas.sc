@@ -157,8 +157,13 @@ Canvas {
 		});
 		this.origin_(newOrigin.x, newOrigin.y);
 	}
-
 	screenOrigin { ^canvasView.mapToGlobal(Point(0,0)) }
+
+	screenOriginX_ {|x|	this.screenOrigin_(x, this.screenOrigin.y) }
+	screenOriginX {	^this.screenOrigin.x }
+
+	screenOriginY_ {|y|	this.screenOrigin_(this.screenOrigin.x, y) }
+	screenOriginY {	^this.screenOrigin.y }
 
 	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
 
