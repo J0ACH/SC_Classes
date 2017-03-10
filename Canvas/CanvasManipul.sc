@@ -1,5 +1,6 @@
 CanvasMove : Canvas {
 	var mouseDownPosition;
+	var screenMouseDown, screenOriginMouseDown;
 	var offset = 5;
 	var thickness = 20;
 
@@ -13,28 +14,16 @@ CanvasMove : Canvas {
 		this.onResize(p);
 	}
 
-	onMouseDown {|name, x, y|
-		case
-		{ this.parent.view.isKindOf(TopView) } {
-			mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness)
-		}
-		{ this.parent.view.isKindOf(UserView) } {
-			mouseDownPosition = Point(x,y)
-		};
+	onMouseDown {|canvas, x, y|
+		screenMouseDown = QtGUI.cursorPosition;
+		screenOriginMouseDown = Point(this.parent.screenOrigin.x, this.parent.screenOrigin.y);
 	}
 
-	onMouseMove {|view, x, y, modifer|
-		var ptX, ptY;
-		case
-		{ this.parent.view.isKindOf(TopView) } {
-			ptX = this.screenOrigin.x + x - mouseDownPosition.x;
-			ptY = this.screenOrigin.y + y - mouseDownPosition.y;
-		}
-		{ this.parent.view.isKindOf(UserView) } {
-			ptX = this.parent.origin.x + x - mouseDownPosition.x;
-			ptY = this.parent.origin.y + y - mouseDownPosition.y;
-		};
-		this.parent.origin_(ptX, ptY);
+	onMouseMove {|canvas, x, y, modifer|
+		var mouse = QtGUI.cursorPosition;
+		var deltaX = mouse.x - screenMouseDown.x;
+		var deltaY = mouse.y - screenMouseDown.y;
+		this.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 	}
 
 	onResize {|canvas|
@@ -80,12 +69,12 @@ CanvasSize {
 		/*
 		case
 		{ parent.view.isKindOf(TopView) } {
-			mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
+		mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
 		}
 		{ parent.view.isKindOf(UserView) } {
-			mouseDownPosition = Point(x,y)
+		mouseDownPosition = Point(x,y)
 		};
-*/
+		*/
 		mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness);
 		mouseDownSize = p.size;
 	}
@@ -114,26 +103,26 @@ CanvasSize {
 			parent.width_(mouseDownSize.width - ptX);
 
 			case
-		{ parent.view.isKindOf(TopView) } {
-			mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
-		}
-		{ parent.view.isKindOf(UserView) } {
-			mouseDownPosition = Point(x,y)
-		};
+			{ parent.view.isKindOf(TopView) } {
+				mouseDownPosition = Point(manipul.width + offset - x, manipul.height + offset - y);
+			}
+			{ parent.view.isKindOf(UserView) } {
+				mouseDownPosition = Point(x,y)
+			};
 
 			// parent.origin_(mouseDownPosition.x - ptX);
 			// parent.originX_(ptX);
-/*
+			/*
 			case
 			{ parent.view.isKindOf(TopView) } {
-				ptX = parent.screenOrigin.x + x - mouseDownPosition.x;
-				// parent.origin_(ptX, parent.screenOrigin.y)
+			ptX = parent.screenOrigin.x + x - mouseDownPosition.x;
+			// parent.origin_(ptX, parent.screenOrigin.y)
 			}
 			{ parent.view.isKindOf(UserView) } {
-				ptX = manipul.origin.x + x + mouseDownPosition.x;
-				// parent.origin_(ptX, mouseDownPosition.y)
+			ptX = manipul.origin.x + x + mouseDownPosition.x;
+			// parent.origin_(ptX, mouseDownPosition.y)
 			};
-*/
+			*/
 			// parent.origin_(ptX, ptY);
 			// ptY = manipul.origin.y + y + mouseDownPosition.y;
 			// parent.origin_(ptX, parent.screenOrigin.y)

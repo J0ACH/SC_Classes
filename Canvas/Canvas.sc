@@ -3,7 +3,6 @@ Canvas {
 	classvar <>library;
 
 	var canvasParent, canvasView;
-	var screenMouseDown, screenMouseMove;
 
 	*initClass {
 		library = IdentityDictionary.new;
@@ -139,40 +138,38 @@ Canvas {
 	screenOrigin_ {|x, y|
 		var nextParent = this.parent;
 		var newOrigin = Point(x, y);
-		// this.origin.postln;
 
 		while ( { nextParent != nil }, {
-			nextParent.postln;
-			nextParent.screenOrigin.postln;
 			newOrigin.x = newOrigin.x - nextParent.screenOrigin.x;
 			newOrigin.y = newOrigin.y - nextParent.screenOrigin.y;
 			nextParent = nextParent.parent;
 		});
-		newOrigin.postln;
 		this.origin_(newOrigin.x, newOrigin.y);
-		// win.bounds.origin_(Point(x, y));
-		// this.parent.postln;
-
 	}
+
 	screenOrigin { ^canvasView.mapToGlobal(Point(0,0)) }
 
 	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
 
 	onMouseDown {|canvas, x, y|
-		screenMouseDown = Point(this.screenOrigin.x + x, this.screenOrigin.y + y);
-		"%.onMouseDown [%, %]".format(canvas, screenMouseDown.x, screenMouseDown.y).postln;
+		// var screenMouseDown = Point(this.screenOrigin.x + x, this.screenOrigin.y + y);
+		// "%.onMouseDown [%, %]".format(canvas, screenMouseDown.x, screenMouseDown.y).postln;
 	}
 
 	onMouseUp {|canvas, x, y|
-		"%.onMouseUp [%, %]".format(canvas, x, y).postln
+		// "%.onMouseUp [%, %]".format(canvas, x, y).postln
 	}
 
 	onMouseOver {|canvas, x, y|
-		"%.onMouseOver [%, %]".format(canvas, x, y).postln
+		// "%.onMouseOver [%, %]".format(canvas, x, y).postln
 	}
 
-	onEnter {|canvas| "%.onEnter".format(canvas).postln; }
-	onLeave {|canvas| "%.onLeave".format(canvas).postln; }
+	onEnter {|canvas|
+		// "%.onEnter".format(canvas).postln;
+	}
+	onLeave {|canvas|
+		// "%.onLeave".format(canvas).postln;
+	}
 
 	onMouseMove {|canvas, x, y, modifer|
 		// "%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
