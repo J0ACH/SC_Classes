@@ -86,7 +86,7 @@ CanvasSize {
 			mouseDownPosition = Point(x,y)
 		};
 */
-		mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness)
+		mouseDownPosition = Point(x + (2*offset) + thickness, y+ (2*offset) + thickness);
 		mouseDownSize = p.size;
 	}
 	onMouseMove {|manipul, side, x, y, modifer|
