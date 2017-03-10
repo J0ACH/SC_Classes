@@ -58,13 +58,24 @@ Canvas {
 
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
-		canvasView.addAction({|v, x, y| this.onMouseDown(this, x, y) }, \mouseDownAction);
-		canvasView.addAction({|v, x, y| this.onMouseUp(this, x, y) }, \mouseUpAction);
+		canvasView.addAction({|v, x, y|
+			var coorScreen = QtGUI.cursorPosition;
+			this.onMouseDown(this, x, y, coorScreen.x, coorScreen.y);
+		}, \mouseDownAction);
+
+		canvasView.addAction({|v, x, y|
+			var coorScreen = QtGUI.cursorPosition;
+			this.onMouseUp(this, x, y, coorScreen.x, coorScreen.y);
+		}, \mouseUpAction);
+
+		canvasView.addAction({|v, x, y, modifer|
+			var coorScreen = QtGUI.cursorPosition;
+			this.onMouseMove(this, x, y, coorScreen.x, coorScreen.y, modifer)
+		}, \mouseMoveAction);
+
 		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
 		canvasView.addAction({|v| this.onEnter(this); v.refresh; }, \mouseEnterAction);
 		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
-
-		canvasView.addAction({|v, x, y, modifer| this.onMouseMove(this, x, y, modifer) }, \mouseMoveAction);
 
 		canvasView.addAction({|v| this.onResize(this) }, \onResize);
 
@@ -151,12 +162,12 @@ Canvas {
 
 	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
 
-	onMouseDown {|canvas, x, y|
+	onMouseDown {|canvas, x, y, screenX, screenY|
 		// var screenMouseDown = Point(this.screenOrigin.x + x, this.screenOrigin.y + y);
 		// "%.onMouseDown [%, %]".format(canvas, screenMouseDown.x, screenMouseDown.y).postln;
 	}
 
-	onMouseUp {|canvas, x, y|
+	onMouseUp {|canvas, x, y, screenX, screenY|
 		// "%.onMouseUp [%, %]".format(canvas, x, y).postln
 	}
 
@@ -171,7 +182,7 @@ Canvas {
 		// "%.onLeave".format(canvas).postln;
 	}
 
-	onMouseMove {|canvas, x, y, modifer|
+	onMouseMove {|canvas, x, y, screenX, screenY, modifer|
 		// "%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
 	}
 

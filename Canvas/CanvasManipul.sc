@@ -1,5 +1,5 @@
 CanvasMove : Canvas {
-	var mouseDownPosition;
+
 	var screenMouseDown, screenOriginMouseDown;
 	var offset = 5;
 	var thickness = 20;
@@ -14,15 +14,18 @@ CanvasMove : Canvas {
 		this.onResize(p);
 	}
 
-	onMouseDown {|canvas, x, y|
-		screenMouseDown = QtGUI.cursorPosition;
+	onMouseDown {|canvas, x, y, screenX, screenY|
+		// screenMouseDown = QtGUI.cursorPosition;
+		screenMouseDown = Point(screenX, screenY);
 		screenOriginMouseDown = Point(this.parent.screenOrigin.x, this.parent.screenOrigin.y);
 	}
 
-	onMouseMove {|canvas, x, y, modifer|
-		var mouse = QtGUI.cursorPosition;
-		var deltaX = mouse.x - screenMouseDown.x;
-		var deltaY = mouse.y - screenMouseDown.y;
+	onMouseMove {|canvas, x, y, screenX, screenY, modifer|
+		// var mouse = QtGUI.cursorPosition;
+		// var deltaX = mouse.x - screenMouseDown.x;
+		// var deltaY = mouse.y - screenMouseDown.y;
+		var deltaX = screenX - screenMouseDown.x;
+		var deltaY = screenY - screenMouseDown.y;
 		this.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 	}
 
