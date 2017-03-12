@@ -8,7 +8,8 @@ CanvasMove : Canvas {
 
 	init { |p|
 		this.parent_(p);
-		this.background_(150,30,130);
+		// this.background_(Color.new255(150,30,130));
+		this.color255_(\background, 150,30,30);
 		this.name = "CanvasMove";
 		this.parent.view.addAction({|v| this.onResize(this.parent) }, \onResize);
 		this.onResize(p);
@@ -55,7 +56,8 @@ CanvasSize {
 		sideKeys.do({|side|
 			var oneManipul = Canvas(0, 0, 50, 50, parent);
 			oneManipul.name = "CanvasSize_%".format(side);
-			oneManipul.background_(150,30,30);
+			// oneManipul.background = Color.new255(150,30,30);
+			oneManipul.color255_(\background, 150,30,30);
 
 			oneManipul.view.addAction({|v, x, y|
 				var coorScreen = QtGUI.cursorPosition;
@@ -156,3 +158,17 @@ CanvasSize {
 		});
 	}
 }
+
+CanvasClose : CanvasButton {
+
+	*new {|parent, offset, size| ^super.new(parent.width - offset - size, offset, size, size, parent).init(parent, offset, size) }
+
+	init {|parent, offset, size|
+		this.background_(255,0,0);
+		this.string = "X";
+		this.mouseDownAction = { parent.close };
+		// this.refresh;
+	}
+}
+
+

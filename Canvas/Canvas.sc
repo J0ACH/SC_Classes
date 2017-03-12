@@ -1,35 +1,9 @@
 Canvas {
 
-	classvar <>library;
-
 	var canvasParent, canvasView;
+	var <colorTable;
 
-	*initClass {
-		library = IdentityDictionary.new;
-	}
-
-	*new { |x, y, w, h, parent = nil, name = nil|
-		// ^super.new.initCanvas(x, y, w, h, parent, name).init;
-		// /*
-		var instance = this.exist(name);
-		if ( instance.isNil )
-		{ instance = super.new.initCanvas(x, y, w, h, parent, name).init }
-		{
-			instance.origin_(x, y);
-			instance.size_(w, h);
-			instance.parent_(parent);
-		};
-		if ( name.notNil ) { library.put(name.asSymbol, instance) }
-		^instance;
-		// */
-	}
-
-	*exist { |name|
-		var sigleton = this.library.at(name.asSymbol);
-		if(sigleton.notNil) { ^sigleton } { ^nil; }
-	}
-
-	*printAll { this.library.postTree; ^nil; }
+	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
 
 	initCanvas {|x, y, w, h, parent, name|
 
@@ -51,11 +25,14 @@ Canvas {
 			canvasView = UserView(parent.view, Rect(x, y, w, h));
 			canvasView.name = name.asSymbol;
 		};
+		// canvasView.postln;
+		colorTable = IdentityDictionary.new();
 
-		this.background_(90,90,90);
+		this.background = Color.new255(90,90,90);
+		this.color255_(\background, 90,90,90);
+		// canvasView.background = this.color(\background);
 
-		canvasView.addAction({|v| library.removeAt(name.asSymbol) }, \onClose);
-
+		// canvasView.addAction({|v| library.removeAt(name.asSymbol) }, \onClose);
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
 		canvasView.addAction({|v, x, y|
@@ -79,6 +56,16 @@ Canvas {
 
 		canvasView.addAction({|v| this.onResize(this) }, \onResize);
 
+		if(canvasView.isKindOf(UserView))
+		{
+			canvasView.drawFunc_({|v|
+				var rect = Rect(0,0, this.width, this.height);
+				Pen.fillColor_( this.color(\background) );
+				Pen.fillRect(rect);
+			});
+		}
+
+
 	}
 
 	init { }
@@ -101,8 +88,13 @@ Canvas {
 	name_ { |txt| canvasView.name_(txt) }
 	name { ^canvasView.name  }
 
-	background_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
+	background_ {|color| canvasView.background_(color) }
 	background { ^canvasView.background }
+	// backgroundRGB_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
+
+	color255_ { |name, r, g, b, a = 1| this.color_(name.asSymbol, Color.new255(r,g,b,a * 255));  }
+	color_ { |name, color| colorTable.put(name.asSymbol, color); this.refresh;}
+	color { |name| ^colorTable.at(name) }
 
 	alpha_ {|a|
 		case
@@ -176,6 +168,10 @@ Canvas {
 		// "%.onMouseUp [%, %]".format(canvas, x, y).postln
 	}
 
+	onMouseMove {|canvas, x, y, screenX, screenY, modifer|
+		// "%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
+	}
+
 	onMouseOver {|canvas, x, y|
 		// "%.onMouseOver [%, %]".format(canvas, x, y).postln
 	}
@@ -187,28 +183,18 @@ Canvas {
 		// "%.onLeave".format(canvas).postln;
 	}
 
-	onMouseMove {|canvas, x, y, screenX, screenY, modifer|
-		// "%.onMouseOver [x:%, y:%, mod:%]".format(canvas, x, y, modifer).postln;
-	}
-
 	onResize {|canvas|
 		// "%.onResize [w:%, h:%]".format(canvas, canvas.width, canvas.height).postln;
 	}
 
 	draw { |fnc|
 		canvasView.drawFunc_({|view|
+			var rect = Rect(0,0, this.width, this.height);
+			Pen.fillColor_( this.color(\background) );
+			Pen.fillRect(rect);
 			fnc.value(view);
-			// this.onDraw;
-			// view.refresh;
 		});
-		/*
-		{|uview|
-		Pen.strokeColor_( Color.white );
-		Pen.moveTo(0@uview.bounds.height.rand);
-		Pen.lineTo(uview.bounds.width@uview.bounds.height.rand);
-		Pen.stroke;
-		})
-		*/
+		canvasView.refresh;
 	}
 	/*
 	onDraw {
@@ -216,6 +202,7 @@ Canvas {
 	}
 	*/
 
+	refresh { canvasView.refresh }
 }
 
 

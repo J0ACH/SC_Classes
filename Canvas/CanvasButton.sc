@@ -5,18 +5,22 @@ CanvasButton : Canvas {
 
 	var >mouseDownAction;
 
-	init {
+	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton.init }
+
+	initButton {
 
 		mouseDownAction = nil;
 		string = "CanvasButton";
-		backColor = Color.new255(80,80,80);
-		overColor = Color.new255(180,80,80);
-		fillColor = backColor;
+		// backColor = this.color(\background);
+		this.color255_(\colorBackground, 50,80,80);
+		this.color255_(\colorOver, 150,80,80);
+		// overColor = Color.new255(180,80,80);
+		// fillColor = this.background;
 
 		this.draw({
 			var rect = Rect(0,0, this.width, this.height);
-			Pen.fillColor_( fillColor );
-			Pen.fillRect(rect);
+			// Pen.fillColor_( backColor );
+			// Pen.fillRect(rect);
 			Pen.color_(Color.white);
 			Pen.strokeRect(rect);
 			Pen.stringCenteredIn(string, rect);
@@ -28,8 +32,15 @@ CanvasButton : Canvas {
 
 	string_ {|txt| string = txt; this.view.refresh; }
 	//
-	onEnter {|view| fillColor = overColor; "mouse enter CanvasButton('%')".format(view.name).postln; }
-	onLeave {|view| fillColor = backColor; "mouse enter CanvasButton('%')".format(view.name).postln; }
+	onEnter {|view|
+		this.color_(\colorBackground, this.color(\background));
+		this.color_(\background, this.color(\colorOver));
+		"%.onEnter".format(this).postln;
+	}
+	onLeave {|view|
+		this.color_(\background, this.color(\colorBackground));
+		"%.onLeave".format(this).postln;
+	}
 
 	onMouseDown {|name, x, y|
 		if(mouseDownAction.notNil)
