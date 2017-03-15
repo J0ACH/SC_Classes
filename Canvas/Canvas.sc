@@ -19,13 +19,18 @@ Canvas {
 			win.front;
 			win.view.alwaysOnTop_(true);
 			win.acceptsMouseOver_(true);
-			canvasView = win.asView;
+			// canvasView = win.asView;
+
+			canvasView = UserView(win, Rect(0, 0, w, h));
+			canvasView.name = "Canvas_WinView";
+
+			canvasView.addAction({|v| win.close; }, \onClose);
 		}
 		{
 			canvasView = UserView(parent.view, Rect(x, y, w, h));
 			canvasView.name = name.asSymbol;
 		};
-		// canvasView.postln;
+		// canvasParent.postln;
 		colorTable = IdentityDictionary.new();
 
 		this.background = Color.new255(90,90,90);
@@ -110,13 +115,16 @@ Canvas {
 		{ canvasView.isKindOf(UserView) } { ^this.background.alpha }
 	}
 
-	size_ {|x, y| canvasView.fixedSize_(Size(x, y)) }
+	size_ {|x, y|
+		if(canvasParent.isNil) { canvasView.parent.setProperty(\size, Size(x, y)) };
+		canvasView.fixedSize_(Size(x, y));
+	}
 	size { ^canvasView.bounds.size }
 
-	width_ {|x| canvasView.fixedWidth_(x) }
+	width_ {|x| this.size_(x, this.height) }
 	width { ^canvasView.bounds.size.width }
 
-	height_ {|y| canvasView.fixedHeight_(y) }
+	height_ {|y| this.size_(this.width, y) }
 	height { ^canvasView.bounds.size.height }
 
 	origin_ {|x, y|
@@ -127,9 +135,9 @@ Canvas {
 	}
 	origin {
 		if(canvasView.isClosed) {^nil};
-		case
-		{ canvasView.isKindOf(TopView) } { ^canvasView.findWindow.bounds.origin }
-		{ canvasView.isKindOf(UserView) } { ^canvasView.bounds.origin  }
+		if(canvasParent.isNil)
+		{ ^this.screenOrigin }
+		{ ^canvasView.bounds.origin }
 	}
 
 	originX_ {|x| this.origin_(x, this.origin.y) }
@@ -147,7 +155,10 @@ Canvas {
 			newOrigin.y = newOrigin.y - nextParent.screenOrigin.y;
 			nextParent = nextParent.parent;
 		});
-		this.origin_(newOrigin.x, newOrigin.y);
+
+		if(canvasParent.isNil)
+		{ canvasView.parent.setProperty(\geometry, Rect(x, y, this.width, this.height)) }
+		{ this.origin_(newOrigin.x, newOrigin.y) }
 	}
 	screenOrigin { ^canvasView.mapToGlobal(Point(0,0)) }
 
