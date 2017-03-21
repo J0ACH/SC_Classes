@@ -1,13 +1,15 @@
 Canvas {
 
 	var canvasParent, canvasView;
-	var <colorTable;
+	var <config;
 
 	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
 
 	initCanvas {|x, y, w, h, parent, name|
 
 		canvasParent = parent;
+
+		config = MultiLevelIdentityDictionary.new();
 
 		if(parent.isNil)
 		{
@@ -30,9 +32,11 @@ Canvas {
 			canvasView = UserView(parent.view, Rect(x, y, w, h));
 			canvasView.name = name.asSymbol;
 		};
-		// canvasParent.postln;
-		colorTable = IdentityDictionary.new();
 
+		// colorTable = IdentityDictionary.new();
+		this.initConfig;
+
+		canvasView.drawingEnabled = true;
 		this.background = Color.new255(90,90,90);
 		this.color255_(\background, 90,90,90);
 		// canvasView.background = this.color(\background);
@@ -61,19 +65,19 @@ Canvas {
 
 		canvasView.addAction({|v| this.onResize(this) }, \onResize);
 
-		if(canvasView.isKindOf(UserView))
-		{
-			canvasView.drawFunc_({|v|
-				var rect = Rect(0,0, this.width, this.height);
-				Pen.fillColor_( this.color(\background) );
-				Pen.fillRect(rect);
-			});
-		}
-
+		canvasView.drawFunc_({|v|
+			var rect = Rect(0,0, this.width, this.height);
+			Pen.fillColor_( this.background );
+			Pen.fillRect(rect);
+		});
 
 	}
 
 	init { }
+
+	initConfig {
+		config.put(\color, \back, Color.new255(30,130,30));
+	}
 
 	parent_ { |parent|
 		if(parent.notNil)
@@ -93,13 +97,17 @@ Canvas {
 	name_ { |txt| canvasView.name_(txt) }
 	name { ^canvasView.name  }
 
-	background_ {|color| canvasView.background_(color) }
-	background { ^canvasView.background }
+	config_ { |canvasConfig|
+
+	}
+
+	background_ {|color| config.put(\color, \back, color) }
+	background { ^config.at(\color, \back) }
 	// backgroundRGB_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
 
-	color255_ { |name, r, g, b, a = 1| this.color_(name.asSymbol, Color.new255(r,g,b,a * 255));  }
-	color_ { |name, color| colorTable.put(name.asSymbol, color); this.refresh;}
-	color { |name| ^colorTable.at(name) }
+	color255_ { |name, r, g, b, a = 1| /*this.color_(name.asSymbol, Color.new255(r,g,b,a * 255)); */ }
+	// color_ { |name, color| colorTable.put(name.asSymbol, color); this.refresh;}
+	// color { |name| ^colorTable.at(name) }
 
 	alpha_ {|a|
 		case
@@ -201,7 +209,9 @@ Canvas {
 	draw { |fnc|
 		canvasView.drawFunc_({|view|
 			var rect = Rect(0,0, this.width, this.height);
-			Pen.fillColor_( this.color(\background) );
+			// var rect = Rect(0,0, 100, 100);
+			Pen.fillColor_( this.background );
+			// Pen.fillColor_( Color.green );
 			Pen.fillRect(rect);
 			fnc.value(view);
 		});
