@@ -1,7 +1,14 @@
 Canvas {
 
 	var canvasParent, canvasView;
-	var <config;
+	// var <config;
+
+	*initClass {
+		"canvas init".warn;
+
+		CanvasConfig.addColor(this, \background, Color.new255(30,50,30));
+		CanvasConfig.addColor(this, \frame, Color.new255(90,90,90));
+	}
 
 	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
 
@@ -9,7 +16,7 @@ Canvas {
 
 		canvasParent = parent;
 
-		config = MultiLevelIdentityDictionary.new();
+		// config = MultiLevelIdentityDictionary.new();
 
 		if(parent.isNil)
 		{
@@ -34,11 +41,11 @@ Canvas {
 		};
 
 		// colorTable = IdentityDictionary.new();
-		this.initConfig;
+		// this.initConfig;
 
 		canvasView.drawingEnabled = true;
-		this.background = Color.new255(90,90,90);
-		this.color255_(\background, 90,90,90);
+		// this.background = Color.new255(90,90,90);
+		// this.color255_(\background, 90,90,90);
 		// canvasView.background = this.color(\background);
 
 		// canvasView.addAction({|v| library.removeAt(name.asSymbol) }, \onClose);
@@ -67,17 +74,18 @@ Canvas {
 
 		canvasView.drawFunc_({|v|
 			var rect = Rect(0,0, this.width, this.height);
-			Pen.fillColor_( this.background );
+			Pen.fillColor_( CanvasConfig.getColor(this, \background) );
 			Pen.fillRect(rect);
 		});
 
 	}
 
 	init { }
-
+/*
 	initConfig {
-		config.put(\color, \back, Color.new255(30,130,30));
+		// config.put(\color, \back, Color.new255(30,130,30));
 	}
+*/
 
 	parent_ { |parent|
 		if(parent.notNil)
@@ -100,9 +108,17 @@ Canvas {
 	config_ { |canvasConfig|
 
 	}
-
-	background_ {|color| config.put(\color, \back, color) }
-	background { ^config.at(\color, \back) }
+/*
+	background_ {|color|
+		// config.put(\color, \back, color)
+		CanvasConfig.addColor(this, \background, color);
+	}
+	background {
+		// ^config.at(\color, \back)
+		// this.postln;
+		^CanvasConfig.getColor(this, \background);
+	}
+	*/
 	// backgroundRGB_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
 
 	color255_ { |name, r, g, b, a = 1| /*this.color_(name.asSymbol, Color.new255(r,g,b,a * 255)); */ }
@@ -113,14 +129,14 @@ Canvas {
 		case
 		{ canvasView.isKindOf(TopView) } { canvasView.alpha_(a) }
 		{ canvasView.isKindOf(UserView) } {
-			var color = this.background;
-			this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
+			// var color = this.background;
+			// this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
 		}
 	}
 	alpha {
 		case
 		{ canvasView.isKindOf(TopView) } { ^canvasView.alpha }
-		{ canvasView.isKindOf(UserView) } { ^this.background.alpha }
+		{ canvasView.isKindOf(UserView) } { /*^this.background.alpha*/ }
 	}
 
 	size_ {|x, y|
@@ -210,8 +226,8 @@ Canvas {
 		canvasView.drawFunc_({|view|
 			var rect = Rect(0,0, this.width, this.height);
 			// var rect = Rect(0,0, 100, 100);
-			Pen.fillColor_( this.background );
-			// Pen.fillColor_( Color.green );
+			// Pen.fillColor_( this.background );
+			Pen.fillColor_( CanvasConfig.getColor(this, \background) );
 			Pen.fillRect(rect);
 			fnc.value(view);
 		});

@@ -10,8 +10,7 @@ CanvasButton : Canvas {
 		mouseDownAction = nil;
 		string = "CanvasButton";
 
-
-		this.background = config.at(\color, \normal);
+		// this.background = config.at(\color, \normal);
 
 		this.draw({
 			var rect = Rect(0,0, this.width, this.height);
@@ -26,19 +25,19 @@ CanvasButton : Canvas {
 	}
 
 	initConfig {
-		config.put(\color, \normal, Color.new255(50,50,50));
-		config.put(\color, \over, Color.new255(150,80,80));
-		config.put(\color, \active, Color.new255(150,80,80));
+		// config.put(\color, \normal, Color.new255(50,50,50));
+		// config.put(\color, \over, Color.new255(150,80,80));
+		// config.put(\color, \active, Color.new255(150,80,80));
 	}
 
 	string_ {|txt| string = txt; this.view.refresh; }
 	//
 	onEnter {|view|
-		this.background = config.at(\color, \over);
+		// this.background = config.at(\color, \over);
 		"%.onEnter".format(this).postln;
 	}
 	onLeave {|view|
-		this.background = config.at(\color, \normal);
+		// this.background = config.at(\color, \normal);
 		"%.onLeave".format(this).postln;
 	}
 
