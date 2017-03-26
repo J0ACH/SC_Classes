@@ -1,13 +1,15 @@
 Canvas {
 
 	var canvasParent, canvasView;
-	// var <config;
+
+	var isFrameVisible;
+
+	var >resizeParentAction;
 
 	*initClass {
-		"canvas init".warn;
-
-		CanvasConfig.addColor(this, \background, Color.new255(30,50,30));
-		CanvasConfig.addColor(this, \frame, Color.new255(90,90,90));
+		// "canvas init".warn;
+		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
+		CanvasConfig.addColor(this, \frame, Color.new255(120,120,120));
 	}
 
 	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
@@ -16,7 +18,9 @@ Canvas {
 
 		canvasParent = parent;
 
-		// config = MultiLevelIdentityDictionary.new();
+		isFrameVisible = false;
+
+		resizeParentAction = nil;
 
 		if(parent.isNil)
 		{
@@ -39,9 +43,6 @@ Canvas {
 			canvasView = UserView(parent.view, Rect(x, y, w, h));
 			canvasView.name = name.asSymbol;
 		};
-
-		// colorTable = IdentityDictionary.new();
-		// this.initConfig;
 
 		canvasView.drawingEnabled = true;
 		// this.background = Color.new255(90,90,90);
@@ -71,21 +72,15 @@ Canvas {
 		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
 
 		canvasView.addAction({|v| this.onResize(this) }, \onResize);
+		if(parent.notNil)
+		{
+			parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize);
+		};
 
-		canvasView.drawFunc_({|v|
-			var rect = Rect(0,0, this.width, this.height);
-			Pen.fillColor_( CanvasConfig.getColor(this, \background) );
-			Pen.fillRect(rect);
-		});
-
+		this.draw();
 	}
 
 	init { }
-/*
-	initConfig {
-		// config.put(\color, \back, Color.new255(30,130,30));
-	}
-*/
 
 	parent_ { |parent|
 		if(parent.notNil)
@@ -105,20 +100,12 @@ Canvas {
 	name_ { |txt| canvasView.name_(txt) }
 	name { ^canvasView.name  }
 
-	config_ { |canvasConfig|
+	background_ {|color| CanvasConfig.addColor(this, \background, color) }
+	background { ^CanvasConfig.getColor(this, \background) }
 
-	}
-/*
-	background_ {|color|
-		// config.put(\color, \back, color)
-		CanvasConfig.addColor(this, \background, color);
-	}
-	background {
-		// ^config.at(\color, \back)
-		// this.postln;
-		^CanvasConfig.getColor(this, \background);
-	}
-	*/
+	hasFrame_ { |bool| isFrameVisible = bool; }
+	hasFrame { ^isFrameVisible }
+
 	// backgroundRGB_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
 
 	color255_ { |name, r, g, b, a = 1| /*this.color_(name.asSymbol, Color.new255(r,g,b,a * 255)); */ }
@@ -222,22 +209,30 @@ Canvas {
 		// "%.onResize [w:%, h:%]".format(canvas, canvas.width, canvas.height).postln;
 	}
 
+	onResizeParent {|canvas|
+		// "%.onResizeParent [parent: %, w:%, h:%]".format(this, canvas, canvas.width, canvas.height).postln;
+	}
+
 	draw { |fnc|
 		canvasView.drawFunc_({|view|
 			var rect = Rect(0,0, this.width, this.height);
-			// var rect = Rect(0,0, 100, 100);
-			// Pen.fillColor_( this.background );
-			Pen.fillColor_( CanvasConfig.getColor(this, \background) );
-			Pen.fillRect(rect);
+			var backgroundColor = CanvasConfig.getColor(this, \background);
+			var frameColor = CanvasConfig.getColor(this, \frame);
+
+			if(backgroundColor.notNil) {
+				Pen.fillColor_( backgroundColor );
+				Pen.fillRect(rect)
+			};
+
+			if(frameColor.notNil && isFrameVisible) {
+				Pen.strokeColor_( frameColor );
+				Pen.strokeRect( rect );
+			};
+
 			fnc.value(view);
 		});
 		canvasView.refresh;
 	}
-	/*
-	onDraw {
-	// "view onDraw".postln
-	}
-	*/
 
 	refresh { canvasView.refresh }
 }

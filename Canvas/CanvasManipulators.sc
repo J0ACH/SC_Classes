@@ -4,15 +4,25 @@ CanvasMove : Canvas {
 	var offset = 5;
 	var thickness = 20;
 
+	*initClass {
+		// "text init".warn;
+		// CanvasConfig.addColor(this, \background, Color.new255(50,20,20));
+		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
+	}
+
 	*new { |parent|	^super.new(0, 0, 50, 50, parent).init(parent) }
 
 	init { |p|
 		this.parent_(p);
-		// this.background_(Color.new255(150,30,130));
-		// this.color255_(\background, 150,30,30);
+
 		this.name = "CanvasMove";
-		this.parent.view.addAction({|v| this.onResize(this.parent) }, \onResize);
-		this.onResize(p);
+		this.hasFrame = true;
+		this.resizeParentAction_({
+			this.origin_(2*offset + thickness, 2*offset + thickness);
+			this.size_(this.parent.width - (4*offset) - (2*thickness), thickness);
+		});
+
+		// this.draw();
 	}
 
 	onMouseDown {|canvas, x, y, screenX, screenY|
@@ -25,11 +35,6 @@ CanvasMove : Canvas {
 		var deltaY = screenY - screenMouseDown.y;
 		this.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 	}
-
-	onResize {|canvas|
-		this.origin_(2*offset + thickness, 2*offset + thickness);
-		this.size_(this.parent.width - (4*offset) - (2*thickness), thickness);
-	}
 }
 
 CanvasSize {
@@ -39,6 +44,12 @@ CanvasSize {
 	var parent;
 	var manipuls;
 	var screenMouseDown, screenOriginMouseDown, mouseDownSize;
+
+	*initClass {
+		// "text init".warn;
+		// CanvasConfig.addColor(this, \background, Color.new255(50,20,20));
+		CanvasConfig.addColor(this, \frame, Color.new255(190,10,10));
+	}
 
 	*new { |parent ... positions| ^super.new().init(parent)	}
 
@@ -56,8 +67,11 @@ CanvasSize {
 		sideKeys.do({|side|
 			var oneManipul = Canvas(0, 0, 50, 50, parent);
 			oneManipul.name = "CanvasSize_%".format(side);
-			// oneManipul.background = Color.new255(150,30,30);
-			// oneManipul.color255_(\background, 150,30,30);
+			oneManipul.draw({
+				var rect = Rect(0,0, oneManipul.width, oneManipul.height);
+				Pen.strokeColor_( CanvasConfig.getColor(this, \frame) );
+				Pen.strokeRect( rect );
+			});
 
 			oneManipul.view.addAction({|v, x, y|
 				var coorScreen = QtGUI.cursorPosition;

@@ -1,15 +1,13 @@
 CanvasConfig {
-	classvar <config2;
+	classvar <config;
 	classvar configPath, <configFile, <configCode;
 	// classvar <colors;
 
 	*initClass {
 		configFile = nil;
 		configPath = PathName.new(this.class.filenameSymbol.asString);
-		// colors = IdentityDictionary.new();
 
-		config2 = MultiLevelIdentityDictionary.new();
-		"config init".warn;
+		config = MultiLevelIdentityDictionary.new();
 	}
 
 	*win {
@@ -24,20 +22,23 @@ CanvasConfig {
 			name: "CavasConfigWin"
 		);
 		var winSize = CanvasSize(win);
+		var winMove = CanvasMove(win);
 		var buttonClose = CanvasButton(configWinSize.width - 80, configWinSize.height - 35,70,25, win);
 		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win);
-		var text = CanvasText(30,30,100,30,win);
+		var text = CanvasText(30,130,100,30,win);
 
-		win.view.addAction({|v|
-			buttonClose.origin_(win.width - 80, win.height - 35);
-			buttonSave.origin_(win.width - 160, win.height - 35);
-		}, \onResize);
+		buttonClose.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) });
+		buttonSave.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) });
 
 		buttonClose.string = "Close";
+		buttonClose.hasFrame = true;
 		buttonClose.mouseDownAction = { win.close };
 
 		buttonSave.string = "Save";
+		buttonSave.hasFrame = true;
 		buttonSave.mouseDownAction = { this.writeConfig };
+
+		^win;
 	}
 
 	*path {	^PathName.new(configPath.pathOnly) }
@@ -105,20 +106,21 @@ CanvasConfig {
 	}
 
 	*addColor {|canvasObject, key, color|
-		var objName = canvasObject.class.asString;
-		"CanvasConfig.addColor object: %".format(objName).postln;
-		config2.put(canvasObject.class.asSymbol, key.asSymbol, color);
-		// colors.put(key.asSymbol, color);
-		// "%.addColor % -> %".format(this, key, color).postln;
+		var objName = canvasObject.class.asString.replace("Meta_", "");
+		objName = objName.replace("Meta_", "");
+		// "CanvasConfig.addColor[%, %] object: %".format(objName.asSymbol, key.asSymbol, color).postln;
+		config.put(objName.asSymbol, \colors, key.asSymbol, color);
 	}
 
 	*getColor {|canvasObject, key|
-		var objName = canvasObject.class.asString;
-		// objName = objName.
-		"CanvasConfig.getColor object: %".format(objName).postln;
-		^config2.at(canvasObject.class.asSymbol, key.asSymbol)
+		var objName = canvasObject.class.asString.replace("Meta_", "");
+		// "CanvasConfig.getColor[%, %] object: %".format(objName.asSymbol, key.asSymbol,  config.at(objName.asSymbol, key.asSymbol)).postln;
+		^config.at(objName.asSymbol, \colors, key.asSymbol)
 	}
 
-	*print { config2.postTree }
+	// *background_ { |canvasObject, color| this.addColor(canvasObject, \background, color) }
+	// *background { |canvasObject| ^this.getColor(canvasObject, \background) }
+
+	*print { config.postTree }
 
 }
