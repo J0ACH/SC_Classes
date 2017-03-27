@@ -2,6 +2,7 @@ Canvas {
 
 	var canvasParent, canvasView;
 
+	var colorBackground, colorFrame;
 	var isFrameVisible;
 
 	var >resizeParentAction;
@@ -18,6 +19,8 @@ Canvas {
 
 		canvasParent = parent;
 
+		colorBackground = CanvasConfig.getColor(this, \background);
+		colorFrame = CanvasConfig.getColor(this, \frame);
 		isFrameVisible = false;
 
 		resizeParentAction = nil;
@@ -100,8 +103,8 @@ Canvas {
 	name_ { |txt| canvasView.name_(txt) }
 	name { ^canvasView.name  }
 
-	background_ {|color| CanvasConfig.addColor(this, \background, color) }
-	background { ^CanvasConfig.getColor(this, \background) }
+	background_ {|color| colorBackground = color; this.refresh }
+	background { ^colorBackground }
 
 	hasFrame_ { |bool| isFrameVisible = bool; }
 	hasFrame { ^isFrameVisible }
@@ -216,16 +219,16 @@ Canvas {
 	draw { |fnc|
 		canvasView.drawFunc_({|view|
 			var rect = Rect(0,0, this.width, this.height);
-			var backgroundColor = CanvasConfig.getColor(this, \background);
-			var frameColor = CanvasConfig.getColor(this, \frame);
+			// var backgroundColor = CanvasConfig.getColor(this, \background);
+			// var frameColor = CanvasConfig.getColor(this, \frame);
 
-			if(backgroundColor.notNil) {
-				Pen.fillColor_( backgroundColor );
+			if(colorBackground.notNil) {
+				Pen.fillColor_( colorBackground );
 				Pen.fillRect(rect)
 			};
 
-			if(frameColor.notNil && isFrameVisible) {
-				Pen.strokeColor_( frameColor );
+			if(colorFrame.notNil && isFrameVisible) {
+				Pen.strokeColor_( colorFrame );
 				Pen.strokeRect( rect );
 			};
 
