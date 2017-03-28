@@ -2,27 +2,33 @@ CanvasButton : Canvas {
 
 	var <string;
 	var >mouseDownAction;
-	var fadetimeEnter, fadetimeLeave, fadeTask;
+	var isActive, holdState;
+	var fadetimeEnter, fadetimeLeave, fps, fadeTask, fadeAlpha;
 
 	*initClass {
 		// "button init".warn;
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
 		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
-		// CanvasConfig.addColor(this, \normal, Color.new255(50,50,50));
-		CanvasConfig.addColor(this, \over, Color.new255(150,80,80));
-		CanvasConfig.addColor(this, \active, Color.new255(150,80,80));
-		CanvasConfig.addColor(this, \text, Color.new255(120,120,120));
+		CanvasConfig.addColor(this, \text, Color.new255(190,190,190));
+		CanvasConfig.addColor(this, \over, Color.new255(50,90,90));
+		CanvasConfig.addColor(this, \active, Color.new255(90,140,180));
 	}
 
 	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton.init }
 
 	initButton {
+
+		isActive = false;
+		holdState = true;
+
 		mouseDownAction = nil;
 		string = "CanvasButton";
 
 		fadeTask = nil;
-		fadetimeEnter = 1;
-		fadetimeLeave = 4;
+		fps = 25;
+		fadeAlpha = 0;
+		fadetimeEnter = 0.15;
+		fadetimeLeave = 0.75;
 
 		this.draw({
 			var rect = Rect(0,0, this.width, this.height);
@@ -34,42 +40,81 @@ CanvasButton : Canvas {
 	string_ {|txt| string = txt; this.view.refresh; }
 
 	onEnter {|view|
-		var alpha = 0;
-		var backCol = CanvasConfig.getColor(this, \background);
-		var overCol = CanvasConfig.getColor(this, \over);
-
-		// AppClock.sched(
-
-		// fadeTask = Routine.run({
-		/*
+		if(isActive.not)
 		{
-			10.do({
-				var col = backCol.blend(overCol, alpha);
-				// this.background = backCol.blend(overCol, alpha);
-				this.background = col;
-				0.1.wait;
-				alpha = alpha + 0.1;
-				alpha.postln;
-				col.postln;
-			});
-			this.background = overCol;
-		}.defer;
-		*/
-		this.background = overCol;
-		// });
+			var colorFrom = CanvasConfig.getColor(this, \background);
+			var colorTo = CanvasConfig.getColor(this, \over);
+			var alphaStep = (1-fadeAlpha) / (fps * fadetimeEnter);
+
+			if( fadeTask.notNil ) { fadeTask.stop; fadeTask = nil };
+			fadeTask = Routine({
+				(fadetimeEnter * fps + 1).do({
+					this.background = colorFrom.blend(colorTo, fadeAlpha);
+					(1 / fps).wait;
+					fadeAlpha = fadeAlpha + alphaStep;
+					if(fadeAlpha >= 1) {
+						fadeAlpha = 1;
+						this.background = colorTo;
+						fadeTask.stop;
+						fadeTask = nil;
+					};
+				});
+			}).play(AppClock);
+		}
 		// "%.onEnter".format(this).postln;
 	}
+
 	onLeave {|view|
-		this.background = CanvasConfig.getColor(this, \background);
+		if(isActive.not)
+		{
+			var colorFrom  = CanvasConfig.getColor(this, \over);
+			var colorTo = CanvasConfig.getColor(this, \background);
+			var alphaStep = fadeAlpha / (fps * fadetimeLeave);
+
+			if( fadeTask.notNil ) { fadeTask.stop; fadeTask = nil };
+			fadeTask = Routine({
+				(fadetimeLeave * fps + 1).do({
+					this.background = colorTo.blend(colorFrom, fadeAlpha);
+					(1 / fps).wait;
+					fadeAlpha = fadeAlpha - alphaStep;
+					if(fadeAlpha <= 0) {
+						fadeAlpha = 0;
+						this.background = colorTo;
+						fadeTask = nil;
+					};
+				});
+			}).play(AppClock);
+		}
 		// "%.onLeave".format(this).postln;
+	}
+
+	onClose {
+		fadeTask.stop;
+		fadeTask = nil;
 	}
 
 	onMouseDown {|name, x, y|
 		if(mouseDownAction.notNil)
-		{ mouseDownAction.value }
+		{
+			mouseDownAction.value;
+			if(isActive.not)
+			{
+				this.background = CanvasConfig.getColor(this, \active);
+				isActive = true;
+			}
+			{
+				this.background = CanvasConfig.getColor(this, \over);
+				isActive = false;
+			}
+		}
 		{ "CanvasButton('%').mouseDownAction not set".format(name).warn }
 	}
 
-
-
+	onMouseUp {|name, x, y|
+		if(holdState.not)
+		{
+			this.background = CanvasConfig.getColor(this, \over);
+			isActive = false;
+		}
+	}
 }

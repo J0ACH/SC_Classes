@@ -52,7 +52,7 @@ Canvas {
 		// this.color255_(\background, 90,90,90);
 		// canvasView.background = this.color(\background);
 
-		// canvasView.addAction({|v| library.removeAt(name.asSymbol) }, \onClose);
+		canvasView.addAction({|v| this.onClose(this); }, \onClose);
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
 
 		canvasView.addAction({|v, x, y|
@@ -183,6 +183,11 @@ Canvas {
 	screenOriginY {	^this.screenOrigin.y }
 
 	printOn { |stream|	stream << this.class.name << "('" << canvasView.name << "')"; }
+
+
+	onClose {|canvas|
+		// "%.onClose".format(canvas).postln;
+	}
 
 	onMouseDown {|canvas, x, y, screenX, screenY|
 		// var screenMouseDown = Point(this.screenOrigin.x + x, this.screenOrigin.y + y);
