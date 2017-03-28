@@ -45,10 +45,17 @@ CanvasSize {
 	var manipuls;
 	var screenMouseDown, screenOriginMouseDown, mouseDownSize;
 
+	var manipulsColors;
+	var isActive, holdState;
+	var fadetimeEnter, fadetimeLeave, fps, fadeTask, fadeAlpha;
+
 	*initClass {
 		// "text init".warn;
 		// CanvasConfig.addColor(this, \background, Color.new255(50,20,20));
 		CanvasConfig.addColor(this, \frame, Color.new255(190,10,10));
+		CanvasConfig.addColor(this, \normal, Color.new255(50,50,50));
+		CanvasConfig.addColor(this, \over, Color.new255(50,190,190));
+		CanvasConfig.addColor(this, \active, Color.new255(90,140,180));
 	}
 
 	*new { |parent ... positions| ^super.new().init(parent)	}
@@ -61,17 +68,78 @@ CanvasSize {
 
 		parent = p;
 		manipuls = IdentityDictionary.new();
+		manipulsColors = IdentityDictionary.new();
+		fadeTask = IdentityDictionary.new();
+		fadeAlpha = IdentityDictionary.new();
+
+		isActive = false;
+		holdState = false;
+		// fadeTask = nil;
+		fps = 25;
+		// fadeAlpha = 0;
+		fadetimeEnter = 0.15;
+		fadetimeLeave = 0.75;
 
 		parent.view.addAction({|v| this.onResize(parent) }, \onResize);
 
 		sideKeys.do({|side|
 			var oneManipul = Canvas(0, 0, 50, 50, parent);
 			oneManipul.name = "CanvasSize_%".format(side);
+
+			manipulsColors.put(oneManipul.name.asSymbol, CanvasConfig.getColor(this, \normal));
+			fadeTask.put(oneManipul.name.asSymbol, nil);
+			fadeAlpha.put(oneManipul.name.asSymbol, 0);
+
 			oneManipul.draw({
 				var rect = Rect(0,0, oneManipul.width, oneManipul.height);
-				Pen.strokeColor_( CanvasConfig.getColor(this, \frame) );
-				Pen.strokeRect( rect );
+				// Pen.strokeColor_( CanvasConfig.getColor(this, \frame) );
+				// Pen.strokeColor_( CanvasConfig.getColor(this, \normal) );
+				// Pen.strokeRect( rect );
+				Pen.strokeColor_( manipulsColors.at(oneManipul.name.asSymbol) );
+
+				case
+				{ side == \right } {
+					Pen.moveTo(oneManipul.width @ 0);
+					Pen.lineTo(oneManipul.width @ oneManipul.height);
+				}
+				{ side == \rightBottom } {
+					Pen.moveTo(0 @ oneManipul.height);
+					Pen.lineTo(oneManipul.width @ oneManipul.height);
+					Pen.lineTo(oneManipul.width @ 0);
+				}
+				{ side == \bottom } {
+					Pen.moveTo(0 @ oneManipul.height);
+					Pen.lineTo(oneManipul.width @ oneManipul.height);
+				}
+				{ side == \leftBottom } {
+					Pen.moveTo(0 @ 0);
+					Pen.lineTo(0 @ oneManipul.height);
+					Pen.lineTo(oneManipul.width @ oneManipul.height);
+				}
+				{ side == \left } {
+					Pen.moveTo(0 @ 0);
+					Pen.lineTo(0 @ oneManipul.height);
+				}
+				{ side == \leftTop } {
+					Pen.moveTo(0 @ oneManipul.height);
+					Pen.lineTo(0 @ 0);
+					Pen.lineTo(oneManipul.width @ 0);
+				}
+				{ side == \top } {
+					Pen.moveTo(0 @ 0);
+					Pen.lineTo(oneManipul.width @ 0);
+				}
+				{ side == \rightTop } {
+					Pen.moveTo(0 @ 0);
+					Pen.lineTo(oneManipul.width @ 0);
+					Pen.lineTo(oneManipul.width @ oneManipul.height);
+				};
+
+				Pen.stroke;
 			});
+
+			oneManipul.view.addAction({|v| this.onEnter(oneManipul); oneManipul.refresh; }, \mouseEnterAction );
+			oneManipul.view.addAction({|v| this.onLeave(oneManipul); oneManipul.refresh; }, \mouseLeaveAction );
 
 			oneManipul.view.addAction({|v, x, y|
 				var coorScreen = QtGUI.cursorPosition;
@@ -87,6 +155,64 @@ CanvasSize {
 		});
 
 		this.onResize(parent);
+	}
+
+	onEnter {|manipul|
+		// if(isActive.not)
+		// {
+		// "onManipul enter %".format(manipul).postln;
+		var fTask = fadeTask.at(manipul.name.asSymbol);
+		var fAlpha = fadeAlpha.at(manipul.name.asSymbol);
+		var colorFrom = CanvasConfig.getColor(this, \normal);
+		var colorTo = CanvasConfig.getColor(this, \over);
+		var alphaStep = (1-fAlpha) / (fps * fadetimeEnter);
+
+		if( fTask.notNil ) { fTask.stop; fTask = nil };
+		fTask = Routine({
+			(fadetimeEnter * fps + 1).do({
+				manipulsColors.put(manipul.name.asSymbol, colorFrom.blend(colorTo, fAlpha));
+				(1 / fps).wait;
+				fAlpha = fAlpha + alphaStep;
+				fadeAlpha.put(manipul.name.asSymbol, fAlpha);
+				if(fAlpha >= 1) {
+					fAlpha = 1;
+					manipulsColors.put(manipul.name.asSymbol, colorTo);
+					fTask.stop;
+					fTask = nil;
+				};
+				manipul.refresh;
+			});
+		}).play(AppClock);
+		// }
+	}
+
+	onLeave {|manipul|
+		// if(isActive.not)
+		// {
+		var fTask = fadeTask.at(manipul.name.asSymbol);
+		var fAlpha = fadeAlpha.at(manipul.name.asSymbol);
+		var colorFrom  = CanvasConfig.getColor(this, \over);
+		var colorTo = CanvasConfig.getColor(this, \normal);
+		var alphaStep = fAlpha / (fps * fadetimeLeave);
+
+		if( fTask.notNil ) { fTask.stop; fTask = nil };
+		fTask = Routine({
+			(fadetimeLeave * fps + 1).do({
+				manipulsColors.put(manipul.name.asSymbol, colorTo.blend(colorFrom, fAlpha));
+				(1 / fps).wait;
+				fAlpha = fAlpha - alphaStep;
+				fadeAlpha.put(manipul.name.asSymbol, fAlpha);
+				if(fAlpha <= 0) {
+					fAlpha = 0;
+					manipulsColors.put(manipul.name.asSymbol, colorTo);
+					fTask.stop;
+					fTask = nil;
+				};
+				manipul.refresh;
+			});
+		}).play(AppClock);
+		// }
+		// "%.onLeave".format(this).postln;
 	}
 
 	onMouseDown {|manipul, x, y, screenX, screenY, p|

@@ -27,6 +27,8 @@ CanvasConfig {
 		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win);
 		var text = CanvasText(30,130,100,30,win);
 
+		win.hasFrame = true;
+
 		buttonClose.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) });
 		buttonSave.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) });
 

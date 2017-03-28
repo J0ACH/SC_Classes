@@ -19,7 +19,7 @@ CanvasButton : Canvas {
 	initButton {
 
 		isActive = false;
-		holdState = true;
+		holdState = false;
 
 		mouseDownAction = nil;
 		string = "CanvasButton";
