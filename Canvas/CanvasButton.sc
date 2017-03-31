@@ -12,6 +12,9 @@ CanvasButton : Canvas {
 		CanvasConfig.addColor(this, \text, Color.new255(190,190,190));
 		CanvasConfig.addColor(this, \over, Color.new255(50,90,90));
 		CanvasConfig.addColor(this, \active, Color.new255(90,140,180));
+		// CanvasConfig.addFont(this, \text, Font.new("Univers Condensed", 11, usePointSize: true));
+		CanvasConfig.addFont(this, \text, Font.new("Consolas", 8, usePointSize: true));
+		// Font.smoothing = true;
 	}
 
 	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton.init }
@@ -32,7 +35,8 @@ CanvasButton : Canvas {
 
 		this.draw({
 			var rect = Rect(0,0, this.width, this.height);
-			Pen.color_( CanvasConfig.getColor(this, \text) );
+			Pen.color = CanvasConfig.getColor(this, \text) ;
+			Pen.font = CanvasConfig.getFont(this, \text);
 			Pen.stringCenteredIn(string, rect);
 		});
 	}

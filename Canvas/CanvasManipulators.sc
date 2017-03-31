@@ -16,7 +16,7 @@ CanvasMove : Canvas {
 		this.parent_(p);
 
 		this.name = "CanvasMove";
-		this.hasFrame = true;
+		this.showFrame = true;
 		this.resizeParentAction_({
 			this.origin_(2*offset + thickness, 2*offset + thickness);
 			this.size_(this.parent.width - (4*offset) - (2*thickness), thickness);

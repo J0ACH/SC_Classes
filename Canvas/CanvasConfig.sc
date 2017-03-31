@@ -27,17 +27,18 @@ CanvasConfig {
 		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win);
 		var text = CanvasText(30,130,100,30,win);
 
-		win.hasFrame = true;
+		win.showFrame = true;
+win.alpha = 0.95;
 
 		buttonClose.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) });
 		buttonSave.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) });
 
-		buttonClose.string = "Close";
-		buttonClose.hasFrame = true;
+		buttonClose.string = "close";
+		buttonClose.showFrame = true;
 		buttonClose.mouseDownAction = { win.close };
 
-		buttonSave.string = "Save";
-		buttonSave.hasFrame = true;
+		buttonSave.string = "save";
+		buttonSave.showFrame = true;
 		buttonSave.mouseDownAction = { this.writeConfig };
 
 		^win;
@@ -107,21 +108,20 @@ CanvasConfig {
 		// }
 	}
 
-	*addColor {|canvasObject, key, color|
+	*addItem { |canvasObject, type, key, value|
 		var objName = canvasObject.class.asString.replace("Meta_", "");
-		objName = objName.replace("Meta_", "");
-		// "CanvasConfig.addColor[%, %] object: %".format(objName.asSymbol, key.asSymbol, color).postln;
-		config.put(objName.asSymbol, \colors, key.asSymbol, color);
+		config.put(objName.asSymbol, type.asSymbol, key.asSymbol, value);
+	}
+	*getItem { |canvasObject, type, key|
+		var objName = canvasObject.class.asString.replace("Meta_", "");
+		^config.at(objName.asSymbol, type.asSymbol, key.asSymbol)
 	}
 
-	*getColor {|canvasObject, key|
-		var objName = canvasObject.class.asString.replace("Meta_", "");
-		// "CanvasConfig.getColor[%, %] object: %".format(objName.asSymbol, key.asSymbol,  config.at(objName.asSymbol, key.asSymbol)).postln;
-		^config.at(objName.asSymbol, \colors, key.asSymbol)
-	}
+	*addColor {|canvasObject, key, color| this.addItem(canvasObject, \colors, key.asSymbol, color) }
+	*getColor {|canvasObject, key| ^this.getItem(canvasObject, \colors, key.asSymbol) }
 
-	// *background_ { |canvasObject, color| this.addColor(canvasObject, \background, color) }
-	// *background { |canvasObject| ^this.getColor(canvasObject, \background) }
+	*addFont {|canvasObject, key, font| this.addItem(canvasObject, \fonts, key.asSymbol, font) }
+	*getFont {|canvasObject, key| ^this.getItem(canvasObject, \fonts, key.asSymbol) }
 
 	*print { config.postTree }
 

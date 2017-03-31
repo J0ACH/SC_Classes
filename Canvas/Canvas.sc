@@ -2,15 +2,19 @@ Canvas {
 
 	var canvasParent, canvasView;
 
-	var colorBackground, colorFrame;
-	var isFrameVisible;
-
 	var >resizeParentAction;
+	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
 	*initClass {
 		// "canvas init".warn;
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
 		CanvasConfig.addColor(this, \frame, Color.new255(120,120,120));
+
+		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
+			case
+			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction ACTION".warn };
+			// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
+		};
 	}
 
 	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
@@ -21,6 +25,7 @@ Canvas {
 
 		colorBackground = CanvasConfig.getColor(this, \background);
 		colorFrame = CanvasConfig.getColor(this, \frame);
+		isBackgroundVisible = false;
 		isFrameVisible = false;
 
 		resizeParentAction = nil;
@@ -48,9 +53,6 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-		// this.background = Color.new255(90,90,90);
-		// this.color255_(\background, 90,90,90);
-		// canvasView.background = this.color(\background);
 
 		canvasView.addAction({|v| this.onClose(this); }, \onClose);
 		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
@@ -75,9 +77,17 @@ Canvas {
 		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
 
 		canvasView.addAction({|v| this.onResize(this) }, \onResize);
-		if(parent.notNil)
-		{
-			parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize);
+		if(parent.notNil) {	parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize) };
+
+		/*
+		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
+			"% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
+		};
+		*/
+		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
+			case
+			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction ACTION".warn };
+			// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
 		};
 
 		this.draw();
@@ -95,8 +105,8 @@ Canvas {
 	}
 	parent { ^canvasParent }
 
-	view { if(canvasView.isClosed) { ^nil } { ^canvasView } }
 	view_ {|newVal| canvasView = newVal }
+	view { if(canvasView.isClosed) { ^nil } { ^canvasView } }
 
 	close {	canvasView.close }
 
@@ -106,8 +116,11 @@ Canvas {
 	background_ {|color| colorBackground = color; this.refresh }
 	background { ^colorBackground }
 
-	hasFrame_ { |bool| isFrameVisible = bool; }
-	hasFrame { ^isFrameVisible }
+	// hasFrame_ { |bool| isFrameVisible = bool; }
+	// hasFrame { ^isFrameVisible }
+
+	showFrame_ { |bool| isFrameVisible = bool; }
+	showFrame { ^isFrameVisible }
 
 	// backgroundRGB_ {|r, g, b, a = 1| canvasView.background_(Color.new255(r,g,b,a * 255)) }
 
@@ -116,12 +129,15 @@ Canvas {
 	// color { |name| ^colorTable.at(name) }
 
 	alpha_ {|a|
+		if(canvasParent.isNil) { canvasView.parent.alpha_(a) }
+		/*
 		case
 		{ canvasView.isKindOf(TopView) } { canvasView.alpha_(a) }
 		{ canvasView.isKindOf(UserView) } {
-			// var color = this.background;
-			// this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
+		// var color = this.background;
+		// this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
 		}
+		*/
 	}
 	alpha {
 		case
@@ -232,7 +248,7 @@ Canvas {
 				Pen.fillRect(rect)
 			};
 
-			if(colorFrame.notNil && isFrameVisible) {
+			if(colorFrame.notNil && this.showFrame) {
 				Pen.strokeColor_( colorFrame );
 				Pen.strokeRect( rect );
 			};
