@@ -1,8 +1,8 @@
 CanvasButton : Canvas {
 
-	var <string;
+	var <text;
 	var >mouseDownAction;
-	var isActive, holdState;
+	var isActive, >holdState;
 	var fadetimeEnter, fadetimeLeave, fps, fadeTask, fadeAlpha;
 
 	*initClass {
@@ -14,18 +14,15 @@ CanvasButton : Canvas {
 		CanvasConfig.addColor(this, \active, Color.new255(90,140,180));
 		// CanvasConfig.addFont(this, \text, Font.new("Univers Condensed", 11, usePointSize: true));
 		CanvasConfig.addFont(this, \text, Font.new("Consolas", 8, usePointSize: true));
-		// Font.smoothing = true;
 	}
 
 	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton.init }
 
 	initButton {
-
 		isActive = false;
 		holdState = false;
 
 		mouseDownAction = nil;
-		string = "CanvasButton";
 
 		fadeTask = nil;
 		fps = 25;
@@ -33,15 +30,14 @@ CanvasButton : Canvas {
 		fadetimeEnter = 0.15;
 		fadetimeLeave = 0.75;
 
-		this.draw({
-			var rect = Rect(0,0, this.width, this.height);
-			Pen.color = CanvasConfig.getColor(this, \text) ;
-			Pen.font = CanvasConfig.getFont(this, \text);
-			Pen.stringCenteredIn(string, rect);
-		});
+		text = CanvasText(0, 0, this.width, this.height, this);
+		text.string = "CanvasButton";
+		text.acceptClickThrough = true;
+		text.showFrame = false;
+		text.alpha = 0;
 	}
 
-	string_ {|txt| string = txt; this.view.refresh; }
+	string_ {|txt| text.string = txt; }
 
 	onEnter {|view|
 		if(isActive.not)

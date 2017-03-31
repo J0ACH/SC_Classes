@@ -12,7 +12,7 @@ Canvas {
 
 		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
 			case
-			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction ACTION".warn };
+			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction".warn }; // Ctrl + "~"
 			// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
 		};
 	}
@@ -36,13 +36,15 @@ Canvas {
 				name: name.asSymbol,
 				bounds: Window.flipY(Rect(x, y, w, h)),
 				border: false
-			);
-			win.front;
-			win.view.alwaysOnTop_(true);
-			win.acceptsMouseOver_(true);
-			// canvasView = win.asView;
+			).front.view.alwaysOnTop_(true).acceptsMouseOver_(true);
 
+			// var scroll = ScrollView(win,Rect(0, 0, w, h)).hasBorder_(false);
+
+
+			// canvasView = UserView(scroll, Rect(0, 0, w, 1000));
 			canvasView = UserView(win, Rect(0, 0, w, h));
+
+
 			canvasView.name = "Canvas_WinView";
 
 			canvasView.addAction({|v| win.close; }, \onClose);
@@ -53,19 +55,9 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
+		this.acceptClickThrough = false;
 
 		canvasView.addAction({|v| this.onClose(this); }, \onClose);
-		// view.addAction({|view, x, y| "draw".warn }, \onRefresh);
-
-		canvasView.addAction({|v, x, y|
-			var coorScreen = QtGUI.cursorPosition;
-			this.onMouseDown(this, x, y, coorScreen.x, coorScreen.y);
-		}, \mouseDownAction);
-
-		canvasView.addAction({|v, x, y|
-			var coorScreen = QtGUI.cursorPosition;
-			this.onMouseUp(this, x, y, coorScreen.x, coorScreen.y);
-		}, \mouseUpAction);
 
 		canvasView.addAction({|v, x, y, modifer|
 			var coorScreen = QtGUI.cursorPosition;
@@ -81,16 +73,45 @@ Canvas {
 
 		/*
 		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
-			"% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
+		"% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
+		};
+		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
+		case
+		{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction ACTION".warn };
+		// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
 		};
 		*/
-		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
-			case
-			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction ACTION".warn };
-			// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
-		};
 
 		this.draw();
+	}
+
+	acceptClickThrough_ {|bool|
+		if(bool)
+		{
+			if(this.parent.notNil)
+			{
+				canvasView.mouseDownAction = nil;
+				canvasView.mouseUpAction = nil;
+				canvasView.addAction( {|v, x, y|
+					this.parent.view.mouseDown(x, y);
+					// this.parent.onMouseDown(this.parent, x, y)
+				} , \mouseDownAction);
+				canvasView.addAction( {|v, x, y| this.parent.onMouseUp(this.parent, x, y) } , \mouseUpAction);
+			}
+		}
+		{
+			canvasView.mouseDownAction = nil;
+			canvasView.mouseUpAction = nil;
+			canvasView.addAction({|v, x, y|
+				var coorScreen = QtGUI.cursorPosition;
+				this.onMouseDown(this, x, y, coorScreen.x, coorScreen.y);
+			}, \mouseDownAction);
+
+			canvasView.addAction({|v, x, y|
+				var coorScreen = QtGUI.cursorPosition;
+				this.onMouseUp(this, x, y, coorScreen.x, coorScreen.y);
+			}, \mouseUpAction);
+		}
 	}
 
 	init { }
@@ -129,20 +150,17 @@ Canvas {
 	// color { |name| ^colorTable.at(name) }
 
 	alpha_ {|a|
-		if(canvasParent.isNil) { canvasView.parent.alpha_(a) }
-		/*
-		case
-		{ canvasView.isKindOf(TopView) } { canvasView.alpha_(a) }
-		{ canvasView.isKindOf(UserView) } {
-		// var color = this.background;
-		// this.background_(color.red * 255, color.green * 255, color.blue * 255, a);
+		if(canvasParent.isNil)
+		{ canvasView.parent.alpha_(a) }
+		{
+			var color = this.background;
+			this.background_(Color.new(color.red, color.green, color.blue, a));
 		}
-		*/
 	}
 	alpha {
-		case
-		{ canvasView.isKindOf(TopView) } { ^canvasView.alpha }
-		{ canvasView.isKindOf(UserView) } { /*^this.background.alpha*/ }
+		if(canvasParent.isNil)
+		{ ^canvasView.parent.alpha }
+		{ ^this.background.alpha }
 	}
 
 	size_ {|x, y|
@@ -206,12 +224,11 @@ Canvas {
 	}
 
 	onMouseDown {|canvas, x, y, screenX, screenY|
-		// var screenMouseDown = Point(this.screenOrigin.x + x, this.screenOrigin.y + y);
-		// "%.onMouseDown [%, %]".format(canvas, screenMouseDown.x, screenMouseDown.y).postln;
+		// "%.onMouseDown [x:%, y:%, scrX:%, scrY:%]".format(canvas, x, y, screenX, screenY).postln;
 	}
 
 	onMouseUp {|canvas, x, y, screenX, screenY|
-		// "%.onMouseUp [%, %]".format(canvas, x, y).postln
+		// "%.onMouseUp [x:%, y:%, scrX:%, scrY:%]".format(canvas, x, y, screenX, screenY).postln;
 	}
 
 	onMouseMove {|canvas, x, y, screenX, screenY, modifer|

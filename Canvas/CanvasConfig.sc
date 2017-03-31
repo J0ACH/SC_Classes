@@ -20,26 +20,28 @@ CanvasConfig {
 			configWinSize.width,
 			configWinSize.height,
 			name: "CavasConfigWin"
-		);
+		)
+		.showFrame_(true)
+		.alpha_(0.95);
+
 		var winSize = CanvasSize(win);
 		var winMove = CanvasMove(win);
-		var buttonClose = CanvasButton(configWinSize.width - 80, configWinSize.height - 35,70,25, win);
-		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win);
-		var text = CanvasText(30,130,100,30,win);
 
-		win.showFrame = true;
-win.alpha = 0.95;
+		var buttonClose = CanvasButton(configWinSize.width - 80, configWinSize.height - 35,70,25, win)
+		.string_("close")
+		.showFrame_(true)
+		.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) })
+		.mouseDownAction_({ win.close });
 
-		buttonClose.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) });
-		buttonSave.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) });
+		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win)
+		.string_("save")
+		.holdState_(false)
+		.showFrame_(true)
+		.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) })
+		.mouseDownAction_({ this.writeConfig });
 
-		buttonClose.string = "close";
-		buttonClose.showFrame = true;
-		buttonClose.mouseDownAction = { win.close };
-
-		buttonSave.string = "save";
-		buttonSave.showFrame = true;
-		buttonSave.mouseDownAction = { this.writeConfig };
+		var text = CanvasText(30,130,100,30,win).string_("begin");
+		var text2 = CanvasText(30,830,100,30,win).string_("end");
 
 		^win;
 	}
