@@ -5,19 +5,23 @@ Canvas {
 	var >resizeParentAction;
 	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
+	var canvasActions;
+
 	*initClass {
-		// "canvas init".warn;
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
 		CanvasConfig.addColor(this, \frame, Color.new255(120,120,120));
-
+		/*
 		Document.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
-			case
-			{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction".warn }; // Ctrl + "~"
-			// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
+		case
+		{ modifiers == 262144 && keycode == 192 } { "Canvas Document.globalKeyDownAction".warn }; // Ctrl + "~"
+		// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
 		};
+		*/
 	}
 
 	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
+
+	init { }
 
 	initCanvas {|x, y, w, h, parent, name|
 
@@ -30,6 +34,8 @@ Canvas {
 
 		resizeParentAction = nil;
 
+		canvasActions = MultiLevelIdentityDictionary.new;
+
 		if(parent.isNil)
 		{
 			var win = Window(
@@ -39,14 +45,10 @@ Canvas {
 			).front.view.alwaysOnTop_(true).acceptsMouseOver_(true);
 
 			// var scroll = ScrollView(win,Rect(0, 0, w, h)).hasBorder_(false);
-
-
 			// canvasView = UserView(scroll, Rect(0, 0, w, 1000));
+
 			canvasView = UserView(win, Rect(0, 0, w, h));
-
-
 			canvasView.name = "Canvas_WinView";
-
 			canvasView.addAction({|v| win.close; }, \onClose);
 		}
 		{
@@ -56,8 +58,6 @@ Canvas {
 
 		canvasView.drawingEnabled = true;
 		this.acceptClickThrough = false;
-
-		canvasView.addAction({|v| this.onClose(this); }, \onClose);
 
 		canvasView.addAction({|v, x, y, modifer|
 			var coorScreen = QtGUI.cursorPosition;
@@ -84,6 +84,27 @@ Canvas {
 
 		this.draw();
 	}
+
+	// FUNCTIONS ///////////////////////////////////////////
+
+	addAction {|action, name, fnc|
+		var currentFnc = canvasActions.at(action.asSymbol, name.asSymbol);
+		if(currentFnc.notNil) { this.removeAction(action, name) };
+		canvasActions.put(action.asSymbol, name.asSymbol, fnc);
+		canvasView.addAction(fnc, action.asSymbol);
+	}
+	removeAction {|action, name|
+		var fnc = canvasActions.at(action.asSymbol, name.asSymbol);
+		canvasView.removeAction(fnc, action.asSymbol);
+		canvasActions.removeEmptyAtPath([action.asSymbol, name.asSymbol]);
+	}
+	printActions { canvasActions.postTree }
+
+	add_onClose {|name, fnc| this.addAction(\onClose, name.asSymbol, fnc) }
+	remove_onClose {|name| this.removeAction(\onClose, name.asSymbol) }
+
+	///////////////////////////////////////////////////////
+
 
 	acceptClickThrough_ {|bool|
 		if(bool)
@@ -114,7 +135,7 @@ Canvas {
 		}
 	}
 
-	init { }
+
 
 	parent_ { |parent|
 		if(parent.notNil)

@@ -60,8 +60,6 @@ CanvasText : Canvas {
 	orientation_ {|val|
 		orientation = val;
 		this.position = position;
-		// position.postln;
-		this.refresh
-
+		this.refresh;
 	}
 }
