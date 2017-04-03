@@ -100,8 +100,24 @@ Canvas {
 	}
 	printActions { canvasActions.postTree }
 
-	add_onClose {|name, fnc| this.addAction(\onClose, name.asSymbol, fnc) }
+	add_onClose {|name, fnc| this.addAction(\onClose, name.asSymbol, {|v| fnc.value(this) }) }
 	remove_onClose {|name| this.removeAction(\onClose, name.asSymbol) }
+
+	add_onMouseDown {|name, fnc|
+		this.addAction(\mouseDownAction, name.asSymbol,	{|v, x, y|
+			var coorScreen = QtGUI.cursorPosition;
+			fnc.value(this, x, y, coorScreen.x, coorScreen.y);
+		})
+	}
+	remove_onMouseDown {|name| this.removeAction(\mouseDownAction, name.asSymbol) }
+
+	add_onMouseUp {|name, fnc|
+		this.addAction(\mouseUpAction, name.asSymbol, {|v, x, y|
+			var coorScreen = QtGUI.cursorPosition;
+			fnc.value(this, x, y, coorScreen.x, coorScreen.y);
+		})
+	}
+	remove_onMouseUp {|name| this.removeAction(\mouseUpAction, name.asSymbol) }
 
 	///////////////////////////////////////////////////////
 
@@ -297,6 +313,7 @@ Canvas {
 	}
 
 	refresh { canvasView.refresh }
-}
+	}
 
 
+	
