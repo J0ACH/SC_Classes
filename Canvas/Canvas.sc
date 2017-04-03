@@ -57,7 +57,6 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-		this.acceptClickThrough = false;
 
 		canvasView.addAction({|v, x, y, modifer|
 			var coorScreen = QtGUI.cursorPosition;
@@ -121,37 +120,23 @@ Canvas {
 
 	///////////////////////////////////////////////////////
 
-
 	acceptClickThrough_ {|bool|
-		if(bool)
-		{
-			if(this.parent.notNil)
-			{
-				canvasView.mouseDownAction = nil;
-				canvasView.mouseUpAction = nil;
-				canvasView.addAction( {|v, x, y|
-					this.parent.view.mouseDown(x, y);
-					// this.parent.onMouseDown(this.parent, x, y)
-				} , \mouseDownAction);
-				canvasView.addAction( {|v, x, y| this.parent.onMouseUp(this.parent, x, y) } , \mouseUpAction);
-			}
+		if(bool) {
+			canvasView.mouseDownAction = { false };
+			canvasView.mouseUpAction = { false };
+			canvasView.mouseEnterAction = { false };
+			canvasView.mouseLeaveAction = { false };
+			canvasView.mouseMoveAction = { false };
+			canvasView.mouseOverAction = { false };
 		}
 		{
-			canvasView.mouseDownAction = nil;
-			canvasView.mouseUpAction = nil;
-			canvasView.addAction({|v, x, y|
-				var coorScreen = QtGUI.cursorPosition;
-				this.onMouseDown(this, x, y, coorScreen.x, coorScreen.y);
-			}, \mouseDownAction);
-
-			canvasView.addAction({|v, x, y|
-				var coorScreen = QtGUI.cursorPosition;
-				this.onMouseUp(this, x, y, coorScreen.x, coorScreen.y);
-			}, \mouseUpAction);
-		}
+			canvasActions.leafDo({|path, fnc|
+				var action = path[0].asSymbol;
+				var name = path[1].asSymbol;
+				this.addAction(action, name, fnc);
+			})
+		};
 	}
-
-
 
 	parent_ { |parent|
 		if(parent.notNil)
@@ -313,7 +298,7 @@ Canvas {
 	}
 
 	refresh { canvasView.refresh }
-	}
+}
 
 
-	
+
