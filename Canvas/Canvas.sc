@@ -2,7 +2,7 @@ Canvas {
 
 	var canvasParent, canvasView;
 
-	var >resizeParentAction;
+	// var >resizeParentAction;
 	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
 	var canvasActions;
@@ -32,7 +32,7 @@ Canvas {
 		isBackgroundVisible = false;
 		isFrameVisible = false;
 
-		resizeParentAction = nil;
+		// resizeParentAction = nil;
 
 		canvasActions = MultiLevelIdentityDictionary.new;
 
@@ -57,18 +57,18 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-
+		/*
 		canvasView.addAction({|v, x, y, modifer|
-			var coorScreen = QtGUI.cursorPosition;
-			this.onMouseMove(this, x, y, coorScreen.x, coorScreen.y, modifer)
+		var coorScreen = QtGUI.cursorPosition;
+		this.onMouseMove(this, x, y, coorScreen.x, coorScreen.y, modifer)
 		}, \mouseMoveAction);
-
+		*/
 		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
-		canvasView.addAction({|v| this.onEnter(this); v.refresh; }, \mouseEnterAction);
-		canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
+		// canvasView.addAction({|v| this.onEnter(this); v.refresh; }, \mouseEnterAction);
+		// canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
 
-		canvasView.addAction({|v| this.onResize(this) }, \onResize);
-		if(parent.notNil) {	parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize) };
+		// canvasView.addAction({|v| this.onResize(this) }, \onResize);
+		// if(parent.notNil) {	parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize) };
 
 		/*
 		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
@@ -118,6 +118,36 @@ Canvas {
 	}
 	remove_onMouseUp {|name| this.removeAction(\mouseUpAction, name.asSymbol) }
 
+	add_onMouseEnter {|name, fnc| this.addAction(\mouseEnterAction, name.asSymbol, {|v| fnc.value(this) })	}
+	remove_onMouseEnter {|name| this.removeAction(\mouseEnterAction, name.asSymbol) }
+
+	add_onMouseLeave {|name, fnc| this.addAction(\mouseLeaveAction, name.asSymbol, {|v| fnc.value(this) })	}
+	remove_onMouseLeave {|name| this.removeAction(\mouseLeaveAction, name.asSymbol) }
+
+	add_onMouseMove {|name, fnc|
+		this.addAction(\mouseMoveAction, name.asSymbol, {|v, x, y|
+			var coorScreen = QtGUI.cursorPosition;
+			fnc.value(this, x, y, coorScreen.x, coorScreen.y);
+		})
+	}
+	remove_onMouseMove {|name| this.removeAction(\mouseMoveAction, name.asSymbol) }
+
+	add_onParentResize {|name, fnc|
+		if(this.parent.notNil) {
+			var currentFnc = canvasActions.at(\onParentResize, name.asSymbol);
+			if(currentFnc.notNil) { this.remove_onParentResize(name) };
+			canvasActions.put(\onParentResize, name.asSymbol, fnc);
+			this.parent.view.addAction({|v| fnc.value(this.parent) }, \onResize);
+		}
+	}
+	remove_onParentResize {|name|
+		if(this.parent.notNil) {
+			var fnc = canvasActions.at(\onParentResize, name.asSymbol);
+			this.parent.view.removeAction(fnc, \onResize);
+			canvasActions.removeEmptyAtPath([\onParentResize, name.asSymbol]);
+		}
+	}
+
 	///////////////////////////////////////////////////////
 
 	acceptClickThrough_ {|bool|
@@ -158,9 +188,6 @@ Canvas {
 
 	background_ {|color| colorBackground = color; this.refresh }
 	background { ^colorBackground }
-
-	// hasFrame_ { |bool| isFrameVisible = bool; }
-	// hasFrame { ^isFrameVisible }
 
 	showFrame_ { |bool| isFrameVisible = bool; }
 	showFrame { ^isFrameVisible }
@@ -204,10 +231,8 @@ Canvas {
 		{ canvasView.isKindOf(UserView) } { ^canvasView.moveTo(x, y)  };
 	}
 	origin {
-		if(canvasView.isClosed) {^nil};
-		if(canvasParent.isNil)
-		{ ^this.screenOrigin }
-		{ ^canvasView.bounds.origin }
+		if(canvasView.isClosed) { ^nil };
+		if(canvasParent.isNil) { ^this.screenOrigin } { ^canvasView.bounds.origin };
 	}
 
 	originX_ {|x| this.origin_(x, this.origin.y) }
@@ -276,11 +301,10 @@ Canvas {
 		// "%.onResizeParent [parent: %, w:%, h:%]".format(this, canvas, canvas.width, canvas.height).postln;
 	}
 
+
 	draw { |fnc|
-		canvasView.drawFunc_({|view|
+		canvasView.drawFunc_({|v|
 			var rect = Rect(0,0, this.width, this.height);
-			// var backgroundColor = CanvasConfig.getColor(this, \background);
-			// var frameColor = CanvasConfig.getColor(this, \frame);
 
 			if(colorBackground.notNil) {
 				Pen.fillColor_( colorBackground );
@@ -292,7 +316,7 @@ Canvas {
 				Pen.strokeRect( rect );
 			};
 
-			fnc.value(view);
+			fnc.value(this);
 		});
 		canvasView.refresh;
 	}

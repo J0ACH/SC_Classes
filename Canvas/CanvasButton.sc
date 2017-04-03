@@ -1,7 +1,7 @@
 CanvasButton : Canvas {
 
 	var <text;
-	var >mouseDownAction;
+	// var >mouseDownAction;
 	var isActive, >holdState;
 	var fadetimeEnter, fadetimeLeave, fps, fadeTask, fadeAlpha;
 
@@ -22,7 +22,12 @@ CanvasButton : Canvas {
 		isActive = false;
 		holdState = false;
 
-		mouseDownAction = nil;
+		this.add_onMouseDown(\default, {|canvas, x, y| this.onMouseDown(canvas, x, y)});
+		this.add_onMouseUp(\default, {|canvas, x, y| this.onMouseUp(canvas, x, y)});
+		this.add_onMouseEnter(\default, {|canvas| this.onEnter; });
+		this.add_onMouseLeave(\default, {|canvas| this.onLeave; });
+
+		// mouseDownAction = nil;
 
 		fadeTask = nil;
 		fps = 25;
@@ -94,20 +99,15 @@ CanvasButton : Canvas {
 	}
 
 	onMouseDown {|name, x, y|
-		if(mouseDownAction.notNil)
+		if(isActive.not)
 		{
-			mouseDownAction.value;
-			if(isActive.not)
-			{
-				this.background = CanvasConfig.getColor(this, \active);
-				isActive = true;
-			}
-			{
-				this.background = CanvasConfig.getColor(this, \over);
-				isActive = false;
-			}
+			this.background = CanvasConfig.getColor(this, \active);
+			isActive = true;
 		}
-		{ "CanvasButton('%').mouseDownAction not set".format(name).warn }
+		{
+			this.background = CanvasConfig.getColor(this, \over);
+			isActive = false;
+		}
 	}
 
 	onMouseUp {|name, x, y|

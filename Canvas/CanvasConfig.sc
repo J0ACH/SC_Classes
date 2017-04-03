@@ -25,24 +25,28 @@ CanvasConfig {
 		.alpha_(0.95);
 
 		var winSize = CanvasSize(win);
-		var winMove = CanvasMove(win);
+		var winMove = CanvasMove(win).string_("Canvas configuration");
 
 		var buttonClose = CanvasButton(configWinSize.width - 80, configWinSize.height - 35,70,25, win)
+		.name_("ConfigButtonClose")
 		.string_("close")
 		.showFrame_(true)
-		.resizeParentAction_({ buttonClose.origin_(win.width - 80, win.height - 35) })
-		.mouseDownAction_({ win.close });
+		.add_onParentResize(\config, {|parentCanvas| buttonClose.origin_(parentCanvas.width - 80, parentCanvas.height - 35) })
+		.add_onMouseDown(\config, { win.close });
 
 		var buttonSave = CanvasButton(configWinSize.width - 160, configWinSize.height - 35,70,25, win)
+		.name_("ConfigButtonSave")
 		.string_("save")
 		.holdState_(false)
 		.showFrame_(true)
-		.resizeParentAction_({ buttonSave.origin_(win.width - 160, win.height - 35) })
-		.mouseDownAction_({ this.writeConfig });
+		.add_onParentResize(\config, {|parentCanvas| buttonSave.origin_(parentCanvas.width - 160, parentCanvas.height - 35) })
+		.add_onMouseDown(\config, { this.writeConfig });
 
 		var text = CanvasText(30,130,100,30,win).string_("begin");
 		var text2 = CanvasText(30,830,100,30,win).string_("end");
 
+		// winMove.add_onParentResize(\test, {"config move parent resize".warn});
+		// winSize.add_onParentResize(\test, {"config size parent resize".warn});
 		^win;
 	}
 

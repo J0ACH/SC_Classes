@@ -1,42 +1,53 @@
 CanvasMove : Canvas {
 
+	var label;
+	var offset = 7;
+	var thickness = 30;
 	var screenMouseDown, screenOriginMouseDown;
-	var offset = 5;
-	var thickness = 20;
 
 	*initClass {
 		// "text init".warn;
-		// CanvasConfig.addColor(this, \background, Color.new255(50,20,20));
+		CanvasConfig.addColor(this, \background, Color.new255(0,0,0));
 		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
 	}
 
 	*new { |parent|	^super.new(0, 0, 50, 50, parent).init(parent) }
 
 	init { |p|
-		this.parent_(p);
+		label = CanvasText(0, 0, this.width, this.height, this)
+		.name_("CanvasMove_label")
+		// .string_("Win")
+		.acceptClickThrough_(true)
+		.showFrame_(false)
+		.alpha_(0)
+		.add_onParentResize(\default, {|parentCanvas| label.size_(parentCanvas.width, parentCanvas.height) });
+
+		// this.showFrame = true;
+		// p.postln;
 
 		this.name = "CanvasMove";
-		this.showFrame = true;
-		this.resizeParentAction_({
-			this.origin_(2*offset + thickness, 2*offset + thickness);
-			this.size_(this.parent.width - (4*offset) - (2*thickness), thickness);
+		// this.alpha_(0.3);
+		this.add_onParentResize(\default, {|parentCanvas|
+			this.origin_(offset, offset);
+			// this.size_(parentCanvas.width - (4*offset) - (2*thickness), thickness);
+			this.size_(parentCanvas.width - (2*offset), thickness);
+			// this.size_(parentCanvas.width, thickness);
 		});
 
-		// this.draw();
+		this.add_onMouseDown(\default, {|canvas, x, y, screenX, screenY|
+			screenMouseDown = Point(screenX, screenY);
+			screenOriginMouseDown = Point(canvas.parent.screenOrigin.x, canvas.parent.screenOrigin.y);
+		});
+
+		this.add_onMouseMove(\default, {|canvas, x, y, screenX, screenY, modifer|
+			var deltaX = screenX - screenMouseDown.x;
+			var deltaY = screenY - screenMouseDown.y;
+			canvas.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
+		});
 	}
 
-	onMouseDown {|canvas, x, y, screenX, screenY|
-		screenMouseDown = Point(screenX, screenY);
-		screenOriginMouseDown = Point(this.parent.screenOrigin.x, this.parent.screenOrigin.y);
-	}
-
-	onMouseMove {|canvas, x, y, screenX, screenY, modifer|
-		var deltaX = screenX - screenMouseDown.x;
-		var deltaY = screenY - screenMouseDown.y;
-		this.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
-	}
+	string_ {|txt| label.string = txt }
 }
-
 
 CanvasSize {
 	var manipuls;
@@ -50,6 +61,7 @@ CanvasSize {
 
 		sideKeys.do({|side|
 			var edge = CanvasSize_Edge(p, side);
+			// edge.add_onParentResize(\test, {"config size parent resize".warn});
 			manipuls.put(side.asSymbol, edge);
 		})
 	}
@@ -82,17 +94,11 @@ CanvasSize_Edge : Canvas {
 		fadetimeEnter = 0.15;
 		fadetimeLeave = 0.75;
 
-		this.resizeParentAction_({ this.onParentResize });
-
-		this.view.addAction({|v, x, y|
-			var coorScreen = QtGUI.cursorPosition;
-			this.onMouseDown(this, x, y, coorScreen.x, coorScreen.y, this.parent);
-		}, \mouseDownAction);
-
-		this.view.addAction({|v, x, y, modifer|
-			var coorScreen = QtGUI.cursorPosition;
-			this.onMouseMove(this, side, x, y, coorScreen.x, coorScreen.y, modifer)
-		}, \mouseMoveAction);
+		this.add_onMouseEnter(\default, {|canvas| this.onEnter; });
+		this.add_onMouseLeave(\default, {|canvas| this.onLeave; });
+		this.add_onMouseDown(\default, {|canvas, x, y, screenX, screenY| this.onMouseDown(this, x, y, screenX, screenY, this.parent) });
+		this.add_onMouseMove(\default, {|canvas, x, y, screenX, screenY| this.onMouseMove(this, side, x, y, screenX, screenY) });
+		this.add_onParentResize(\default, {|parentCanvas| this.onParentResize });
 
 		this.draw({
 			Pen.strokeColor_( edgeColor );
