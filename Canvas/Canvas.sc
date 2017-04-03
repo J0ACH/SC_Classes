@@ -5,7 +5,7 @@ Canvas {
 	// var >resizeParentAction;
 	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
-	var canvasActions;
+	var canvasActions, drawLayers;
 
 	*initClass {
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
@@ -35,6 +35,7 @@ Canvas {
 		// resizeParentAction = nil;
 
 		canvasActions = MultiLevelIdentityDictionary.new;
+		drawLayers = List.new;
 
 		if(parent.isNil)
 		{
@@ -57,18 +58,10 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-		/*
-		canvasView.addAction({|v, x, y, modifer|
-		var coorScreen = QtGUI.cursorPosition;
-		this.onMouseMove(this, x, y, coorScreen.x, coorScreen.y, modifer)
-		}, \mouseMoveAction);
-		*/
-		// view.addAction({|view, x, y| "mouse %, %".format(x, y).postln; }, \mouseOverAction);
-		// canvasView.addAction({|v| this.onEnter(this); v.refresh; }, \mouseEnterAction);
-		// canvasView.addAction({|v| this.onLeave(this); v.refresh; }, \mouseLeaveAction);
-
-		// canvasView.addAction({|v| this.onResize(this) }, \onResize);
-		// if(parent.notNil) {	parent.view.addAction({|v| resizeParentAction.value(parent) }, \onResize) };
+		canvasView.drawFunc = {
+			drawLayers.do({|assoc| assoc.value.value(this) });
+			this.printLayers;
+		};
 
 		/*
 		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
@@ -84,7 +77,7 @@ Canvas {
 		this.draw();
 	}
 
-	// FUNCTIONS ///////////////////////////////////////////
+	// ACTIONS ///////////////////////////////////////////
 
 	addAction {|action, name, fnc|
 		var currentFnc = canvasActions.at(action.asSymbol, name.asSymbol);
@@ -146,6 +139,35 @@ Canvas {
 			this.parent.view.removeAction(fnc, \onResize);
 			canvasActions.removeEmptyAtPath([\onParentResize, name.asSymbol]);
 		}
+	}
+
+	// DRAW LAYERS ///////////////////////////////////////////
+
+	draw_addLayer {|name, fnc, before = nil|
+		var exist = false;
+		var foundAt = 0;
+		var beforeAt = drawLayers.size;
+
+		drawLayers.do({|assoc, i|
+			if(assoc.key == before.asSymbol) { beforeAt = i };
+			if(assoc.key == name.asSymbol) { exist = true; foundAt = i };
+		});
+
+		if(exist.not)
+		{ drawLayers.insert(beforeAt, name.asSymbol -> fnc) }
+		{ drawLayers[foundAt] = name.asSymbol -> fnc };
+
+		this.refresh;
+	}
+	draw_removeLayer {|name|
+		var foundAt = nil;
+		drawLayers.do({|assoc, i| if(assoc.key == name.asSymbol) { foundAt = i } });
+		if(foundAt.notNil) { drawLayers.removeAt(foundAt) };
+		this.refresh;
+	}
+
+	printLayers {
+		drawLayers.do({|assoc, i| "%) - key: % value: %".format(i, assoc.key, assoc.value).postln; });
 	}
 
 	///////////////////////////////////////////////////////
@@ -301,27 +323,28 @@ Canvas {
 		// "%.onResizeParent [parent: %, w:%, h:%]".format(this, canvas, canvas.width, canvas.height).postln;
 	}
 
-
 	draw { |fnc|
+		/*
 		canvasView.drawFunc_({|v|
-			var rect = Rect(0,0, this.width, this.height);
+		var rect = Rect(0,0, this.width, this.height);
 
-			if(colorBackground.notNil) {
-				Pen.fillColor_( colorBackground );
-				Pen.fillRect(rect)
-			};
+		if(colorBackground.notNil) {
+		Pen.fillColor_( colorBackground );
+		Pen.fillRect(rect)
+		};
 
-			if(colorFrame.notNil && this.showFrame) {
-				Pen.strokeColor_( colorFrame );
-				Pen.strokeRect( rect );
-			};
+		if(colorFrame.notNil && this.showFrame) {
+		Pen.strokeColor_( colorFrame );
+		Pen.strokeRect( rect );
+		};
 
-			fnc.value(this);
+		fnc.value(this);
 		});
 		canvasView.refresh;
+		*/
 	}
 
-	refresh { canvasView.refresh }
+	refresh { canvasView.refresh; }
 }
 
 
