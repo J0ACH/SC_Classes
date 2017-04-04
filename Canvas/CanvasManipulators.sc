@@ -11,27 +11,23 @@ CanvasMove : Canvas {
 		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
 	}
 
-	*new { |parent|	^super.new(0, 0, 50, 50, parent).init(parent) }
+	// *new { |parent|	^super.new(0, 0, parent.width, parent.height, parent).init(parent) }
+	*new { |p| ^super.dummy(p).init }
 
-	init { |p|
+	init {
 		label = CanvasText(0, 0, this.width, this.height, this)
 		.name_("CanvasMove_label")
 		// .string_("Win")
 		.acceptClickThrough_(true)
-		.showFrame_(false)
-		.alpha_(0)
+		// .showFrame_(false)
+		// .alpha_(0)
 		.add_onParentResize(\default, {|parentCanvas| label.size_(parentCanvas.width, parentCanvas.height) });
-
-		// this.showFrame = true;
-		// p.postln;
 
 		this.name = "CanvasMove";
 		// this.alpha_(0.3);
 		this.add_onParentResize(\default, {|parentCanvas|
 			this.origin_(offset, offset);
-			// this.size_(parentCanvas.width - (4*offset) - (2*thickness), thickness);
 			this.size_(parentCanvas.width - (2*offset), thickness);
-			// this.size_(parentCanvas.width, thickness);
 		});
 
 		this.add_onMouseDown(\default, {|canvas, x, y, screenX, screenY|
@@ -44,6 +40,10 @@ CanvasMove : Canvas {
 			var deltaY = screenY - screenMouseDown.y;
 			canvas.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 		});
+
+		// this.draw_removeLayer(\background);
+		this.draw_removeLayer(\frame);
+		// this.printLayers;
 	}
 
 	string_ {|txt| label.string = txt }
@@ -100,52 +100,52 @@ CanvasSize_Edge : Canvas {
 		this.add_onMouseMove(\default, {|canvas, x, y, screenX, screenY| this.onMouseMove(this, side, x, y, screenX, screenY) });
 		this.add_onParentResize(\default, {|parentCanvas| this.onParentResize });
 
-		this.draw({
+		this.draw_removeLayer(\background);
+		this.draw_removeLayer(\frame);
+		this.draw_addLayer(\edge, {|rect|
 			Pen.strokeColor_( edgeColor );
 			Pen.width = 3;
 
 			case
 			{ side == \right } {
-				Pen.moveTo(this.width @ 0);
-				Pen.lineTo(this.width @ this.height);
+				Pen.moveTo(rect.width @ 0);
+				Pen.lineTo(rect.width @ rect.height);
 			}
 			{ side == \rightBottom } {
-				Pen.moveTo(0 @ this.height);
-				Pen.lineTo(this.width @ this.height);
-				Pen.lineTo(this.width @ 0);
+				Pen.moveTo(0 @ rect.height);
+				Pen.lineTo(rect.width @ rect.height);
+				Pen.lineTo(rect.width @ 0);
 			}
 			{ side == \bottom } {
-				Pen.moveTo(0 @ this.height);
-				Pen.lineTo(this.width @ this.height);
+				Pen.moveTo(0 @ rect.height);
+				Pen.lineTo(rect.width @ rect.height);
 			}
 			{ side == \leftBottom } {
 				Pen.moveTo(0 @ 0);
-				Pen.lineTo(0 @ this.height);
-				Pen.lineTo(this.width @ this.height);
+				Pen.lineTo(0 @ rect.height);
+				Pen.lineTo(rect.width @ rect.height);
 			}
 			{ side == \left } {
 				Pen.moveTo(0 @ 0);
-				Pen.lineTo(0 @ this.height);
+				Pen.lineTo(0 @ rect.height);
 			}
 			{ side == \leftTop } {
-				Pen.moveTo(0 @ this.height);
+				Pen.moveTo(0 @ rect.height);
 				Pen.lineTo(0 @ 0);
-				Pen.lineTo(this.width @ 0);
+				Pen.lineTo(rect.width @ 0);
 			}
 			{ side == \top } {
 				Pen.moveTo(0 @ 0);
-				Pen.lineTo(this.width @ 0);
+				Pen.lineTo(rect.width @ 0);
 			}
 			{ side == \rightTop } {
 				Pen.moveTo(0 @ 0);
-				Pen.lineTo(this.width @ 0);
-				Pen.lineTo(this.width @ this.height);
+				Pen.lineTo(rect.width @ 0);
+				Pen.lineTo(rect.width @ rect.height);
 			};
 
 			Pen.stroke;
 		});
-
-		this.onParentResize;
 	}
 
 	onEnter {|view|

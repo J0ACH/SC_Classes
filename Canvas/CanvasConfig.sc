@@ -22,7 +22,7 @@ CanvasConfig {
 			name: "CavasConfigWin"
 		)
 		.showFrame_(true)
-		.alpha_(0.95);
+		.alpha_(0.85);
 
 		var winSize = CanvasSize(win);
 		var winMove = CanvasMove(win).string_("Canvas configuration");

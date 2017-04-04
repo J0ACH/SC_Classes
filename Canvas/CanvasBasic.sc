@@ -13,21 +13,25 @@ CanvasText : Canvas {
 		// CanvasConfig.addFont(this, \text, Font.new("Univers 57 Condensed", 14));
 	}
 
+	// *new { |parent|	^super.new(0, 0, parent.width, parent.height, parent).init }
+	*new { |x, y, w, h, parent = nil, name = nil| ^super.new(x, y, w, h, parent, name).init }
 
 	init {
 
 		// fontType = CanvasConfig.getFont(this, \text);
 		// fontSize = 14;
 
-		string = "text";
 		font = CanvasConfig.getFont(this, \text);
 		color = CanvasConfig.getColor(this, \text);
 		offset = 0;
 		orientation = CanvasOrientation.horizontal;
 		this.position = CanvasPosition.center;
 		this.showFrame = true;
+		this.acceptClickThrough = true;
 
-		this.draw({
+		this.draw_removeLayer(\background);
+		// this.draw_removeLayer(\frame);
+		this.draw_addLayer(\text, {|canvas|
 			var rect;
 			if(orientation == CanvasOrientation.horizontal)
 			{ rect = Rect(offset, offset, this.width - (2*offset), this.height - (2*offset)) }

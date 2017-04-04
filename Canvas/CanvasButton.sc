@@ -1,7 +1,6 @@
 CanvasButton : Canvas {
 
 	var <text;
-	// var >mouseDownAction;
 	var isActive, >holdState;
 	var fadetimeEnter, fadetimeLeave, fps, fadeTask, fadeAlpha;
 
@@ -16,7 +15,7 @@ CanvasButton : Canvas {
 		CanvasConfig.addFont(this, \text, Font.new("Consolas", 8, usePointSize: true));
 	}
 
-	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton.init }
+	*new { |x, y, w, h, parent|	^super.new(x, y, w, h, parent).initButton }
 
 	initButton {
 		isActive = false;
@@ -37,9 +36,11 @@ CanvasButton : Canvas {
 
 		text = CanvasText(0, 0, this.width, this.height, this);
 		text.string = "CanvasButton";
-		text.acceptClickThrough = true;
-		text.showFrame = false;
-		text.alpha = 0;
+		// text.acceptClickThrough = true;
+		// text.showFrame = false;
+		// text.alpha = 0;
+		text.draw_removeLayer(\background);
+		text.draw_removeLayer(\frame);
 	}
 
 	string_ {|txt| text.string = txt; }

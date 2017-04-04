@@ -19,9 +19,8 @@ Canvas {
 		*/
 	}
 
-	*new { |x, y, w, h, parent = nil, name = nil| ^super.new.initCanvas(x, y, w, h, parent, name).init }
-
-	init { }
+	*new { |x, y, w, h, p = nil, name = nil| ^super.new.initCanvas(x, y, w, h, p, name) }
+	*dummy { |p| ^super.new.initCanvas(0, 0, p.width, p.height, p, nil);  }
 
 	initCanvas {|x, y, w, h, parent, name|
 
@@ -58,11 +57,22 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-		canvasView.drawFunc = {
-			drawLayers.do({|assoc| assoc.value.value(this) });
-			this.printLayers;
-		};
+		canvasView.drawFunc = {	drawLayers.do({|assoc| assoc.value.value(Rect(0,0, this.width, this.height)) }) };
 
+		this.draw_addLayer(\background, {|rect|
+			// var rect = Rect(0,0, canvas.width, canvas.height);
+			if(colorBackground.notNil) {
+				Pen.fillColor_( colorBackground );
+				Pen.fillRect(rect)
+			};
+		});
+		this.draw_addLayer(\frame, {|rect|
+			// var rect = Rect(0,0, canvas.width, canvas.height);
+			if(colorFrame.notNil && this.showFrame) {
+				Pen.strokeColor_( colorFrame );
+				Pen.strokeRect( rect );
+			};
+		});
 		/*
 		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
 		"% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
@@ -74,7 +84,7 @@ Canvas {
 		};
 		*/
 
-		this.draw();
+		// this.draw();
 	}
 
 	// ACTIONS ///////////////////////////////////////////
@@ -130,7 +140,7 @@ Canvas {
 			var currentFnc = canvasActions.at(\onParentResize, name.asSymbol);
 			if(currentFnc.notNil) { this.remove_onParentResize(name) };
 			canvasActions.put(\onParentResize, name.asSymbol, fnc);
-			this.parent.view.addAction({|v| fnc.value(this.parent) }, \onResize);
+			this.parent.view.addAction({|v| fnc.value(this.parent); }, \onResize);
 		}
 	}
 	remove_onParentResize {|name|
@@ -290,6 +300,7 @@ Canvas {
 
 	onClose {|canvas|
 		// "%.onClose".format(canvas).postln;
+		"%.onClose bude odstranen".format(this).warn;
 	}
 
 	onMouseDown {|canvas, x, y, screenX, screenY|
@@ -323,26 +334,27 @@ Canvas {
 		// "%.onResizeParent [parent: %, w:%, h:%]".format(this, canvas, canvas.width, canvas.height).postln;
 	}
 
+	/*
 	draw { |fnc|
-		/*
-		canvasView.drawFunc_({|v|
-		var rect = Rect(0,0, this.width, this.height);
+	"%.draw bude odstranen".format(this).warn;
+	canvasView.drawFunc_({|v|
+	var rect = Rect(0,0, this.width, this.height);
 
-		if(colorBackground.notNil) {
-		Pen.fillColor_( colorBackground );
-		Pen.fillRect(rect)
-		};
+	if(colorBackground.notNil) {
+	Pen.fillColor_( colorBackground );
+	Pen.fillRect(rect)
+	};
 
-		if(colorFrame.notNil && this.showFrame) {
-		Pen.strokeColor_( colorFrame );
-		Pen.strokeRect( rect );
-		};
+	if(colorFrame.notNil && this.showFrame) {
+	Pen.strokeColor_( colorFrame );
+	Pen.strokeRect( rect );
+	};
 
-		fnc.value(this);
-		});
-		canvasView.refresh;
-		*/
+	fnc.value(this);
+	});
+	canvasView.refresh;
 	}
+	*/
 
 	refresh { canvasView.refresh; }
 }
