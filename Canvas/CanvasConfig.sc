@@ -24,8 +24,8 @@ CanvasConfig {
 		.showFrame_(true)
 		.alpha_(0.85);
 
-		var winSize = CanvasSize(win);
 		var winMove = CanvasMove(win).string_("Canvas configuration");
+		var winSize = CanvasSize(win);
 
 		var buttonClose = CanvasButton(configWinSize.width - 80, configWinSize.height - 35,70,25, win)
 		.name_("ConfigButtonClose")

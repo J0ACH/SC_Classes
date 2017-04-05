@@ -180,6 +180,16 @@ Canvas {
 		drawLayers.do({|assoc, i| "%) - key: % value: %".format(i, assoc.key, assoc.value).postln; });
 	}
 
+	draw_animateLayer {|dur = 1, animFnc|
+		canvasView.animate = true;
+		canvasView.frameRate.postln;
+		canvasView.animate.postln;
+		"anim".postln;
+		// (dur * 60 ).do({|i| animFnc.value(i); 1/60.wait});
+		AppClock.sched(0, {|i| if(canvasView.animate) { animFnc.value(canvasView.frame); 1/60} { nil } });
+		AppClock.sched(dur, {canvasView.animate = false; "anim end".postln; nil });
+	}
+
 	///////////////////////////////////////////////////////
 
 	acceptClickThrough_ {|bool|

@@ -7,27 +7,26 @@ CanvasMove : Canvas {
 
 	*initClass {
 		// "text init".warn;
-		CanvasConfig.addColor(this, \background, Color.new255(0,0,0));
+		CanvasConfig.addColor(this, \background, Color.new255(40,0,0));
 		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
 	}
 
-	// *new { |parent|	^super.new(0, 0, parent.width, parent.height, parent).init(parent) }
 	*new { |p| ^super.dummy(p).init }
 
 	init {
 		label = CanvasText(0, 0, this.width, this.height, this)
 		.name_("CanvasMove_label")
-		// .string_("Win")
 		.acceptClickThrough_(true)
+		.draw_removeLayer(\frame)
+		.draw_removeLayer(\background)
 		// .showFrame_(false)
 		// .alpha_(0)
 		.add_onParentResize(\default, {|parentCanvas| label.size_(parentCanvas.width, parentCanvas.height) });
 
 		this.name = "CanvasMove";
-		// this.alpha_(0.3);
 		this.add_onParentResize(\default, {|parentCanvas|
-			this.origin_(offset, offset);
-			this.size_(parentCanvas.width - (2*offset), thickness);
+			this.origin_(1, 1);
+			this.size_(parentCanvas.width - 2, thickness);
 		});
 
 		this.add_onMouseDown(\default, {|canvas, x, y, screenX, screenY|
@@ -41,8 +40,12 @@ CanvasMove : Canvas {
 			canvas.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 		});
 
+		this.add_onMouseEnter(\animateTest, { this.draw_animateLayer(); });
+
 		// this.draw_removeLayer(\background);
 		this.draw_removeLayer(\frame);
+		// this.draw_addLayer(\conuter, { canvasView.frame.postln });
+		this.draw_animateLayer(1, {|frame| "frame: %".format(frame).postln })
 		// this.printLayers;
 	}
 
@@ -70,7 +73,7 @@ CanvasSize {
 CanvasSize_Edge : Canvas {
 	classvar <corrners = 30;
 	classvar <offset = 1;
-	classvar <thickness = 15;
+	classvar <thickness = 5;
 
 	var edgeSide;
 	var screenMouseDown, screenOriginMouseDown, mouseDownSize;
@@ -78,7 +81,7 @@ CanvasSize_Edge : Canvas {
 
 	*initClass {
 		CanvasConfig.addColor(this, \normal, Color.new255(20,20,20));
-		CanvasConfig.addColor(this, \over, Color.new255(50,90,90));
+		CanvasConfig.addColor(this, \over, Color.new255(70,110,110));
 		CanvasConfig.addColor(this, \active, Color.new255(90,140,180));
 	}
 
