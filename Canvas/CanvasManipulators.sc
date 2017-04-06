@@ -7,13 +7,16 @@ CanvasMove : Canvas {
 
 	*initClass {
 		// "text init".warn;
-		CanvasConfig.addColor(this, \background, Color.new255(40,0,0));
+		CanvasConfig.addColor(this, \background, Color.new255(50,90,90));
 		CanvasConfig.addColor(this, \frame, Color.new255(190,190,190));
 	}
 
 	*new { |p| ^super.dummy(p).init }
 
 	init {
+		var backAlpha = 0;
+		this.alpha = backAlpha;
+
 		label = CanvasText(0, 0, this.width, this.height, this)
 		.name_("CanvasMove_label")
 		.acceptClickThrough_(true)
@@ -40,13 +43,38 @@ CanvasMove : Canvas {
 			canvas.parent.screenOrigin_(screenOriginMouseDown.x + deltaX,  screenOriginMouseDown.y + deltaY);
 		});
 
-		this.add_onMouseEnter(\animateTest, { this.draw_animateLayer(); });
+		this.add_onMouseEnter(\default, {
+			this.animation_stop(\fadeOut);
+			this.animation_start(
+				name: \fadeIn,
+				animFnc:{|val, frame, time|
+					backAlpha = val;
+					this.alpha = val;
+					"value: %, frame: %, time: %".format(val, frame, time).postln
+				},
+				dur: 0.15,
+				valFrom: backAlpha,
+				valTo: 1
+			)
+		});
+
+		this.add_onMouseLeave(\default, {
+			this.animation_stop(\fadeIn);
+			this.animation_start(
+				name: \fadeOut,
+				animFnc:{|val, frame, time|
+					backAlpha = val;
+					this.alpha = val;
+					"value: %, frame: %, time: %".format(val, frame, time).postln
+				},
+				dur: 0.75,
+				valFrom: backAlpha,
+				valTo: 0
+			)
+		});
 
 		// this.draw_removeLayer(\background);
 		this.draw_removeLayer(\frame);
-		// this.draw_addLayer(\conuter, { canvasView.frame.postln });
-		this.draw_animateLayer(1, {|frame| "frame: %".format(frame).postln })
-		// this.printLayers;
 	}
 
 	string_ {|txt| label.string = txt }

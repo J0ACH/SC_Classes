@@ -5,7 +5,7 @@ Canvas {
 	// var >resizeParentAction;
 	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
-	var canvasActions, drawLayers;
+	var canvasActions, drawLayers, animations;
 
 	*initClass {
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
@@ -35,6 +35,7 @@ Canvas {
 
 		canvasActions = MultiLevelIdentityDictionary.new;
 		drawLayers = List.new;
+		animations = IdentityDictionary.new;
 
 		if(parent.isNil)
 		{
@@ -180,14 +181,50 @@ Canvas {
 		drawLayers.do({|assoc, i| "%) - key: % value: %".format(i, assoc.key, assoc.value).postln; });
 	}
 
-	draw_animateLayer {|dur = 1, animFnc|
-		canvasView.animate = true;
-		canvasView.frameRate.postln;
-		canvasView.animate.postln;
-		"anim".postln;
-		// (dur * 60 ).do({|i| animFnc.value(i); 1/60.wait});
-		AppClock.sched(0, {|i| if(canvasView.animate) { animFnc.value(canvasView.frame); 1/60} { nil } });
-		AppClock.sched(dur, {canvasView.animate = false; "anim end".postln; nil });
+
+	animation_start {|name, animFnc, dur = 1, valFrom = 0, valTo = 1|
+		var frame = 0;
+		var frameRate = 30;
+		var frameDur = 1 / frameRate;
+		var cntFrame = dur / frameDur + 1 ;
+		var values = Array.interpolation(cntFrame, valFrom, valTo );
+		var times = Array.interpolation(cntFrame, 0, dur);
+		var task;
+		var startTime = SystemClock.seconds;
+
+		cntFrame.postln;
+		times.postln;
+		values.postln;
+
+		task = Routine.run({
+			var delay = 0;
+
+			while ({ frame <= ((dur * frameRate)) }, {
+				"\nframe: %".format(frame).postln;
+
+				if(values[frame].notNil)
+				{
+					animFnc.value(values[frame], frame, frame * frameDur );
+					(frameDur - delay).wait;
+				}
+				{
+					"nil action".warn;
+					animFnc.value(valTo, frame, frame * frameDur);
+				};
+				delay = SystemClock.seconds - startTime - (frame * frameDur);
+				"timeCheck: %".format(SystemClock.seconds - startTime).postln;
+				"delay: %".format(delay).postln;
+
+				frame = frame + 1;
+			});
+			"timeCheck: %".format(SystemClock.seconds - startTime).warn;
+		}, clock: AppClock );
+		animations.put(name.asSymbol, task);
+		// ^task;
+	}
+	animation_stop {|name|
+		var task = animations.at(name.asSymbol);
+		if(task.notNil) { task.stop };
 	}
 
 	///////////////////////////////////////////////////////
