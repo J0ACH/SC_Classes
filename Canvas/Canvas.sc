@@ -2,10 +2,12 @@ Canvas {
 
 	var canvasParent, canvasView;
 
-	// var >resizeParentAction;
 	var colorBackground, colorFrame, isBackgroundVisible, isFrameVisible;
 
-	var canvasActions, drawLayers, animations;
+	var canvasActions;
+	// var drawLayers, animations;
+	var drawLayers, drawOrder;
+
 
 	*initClass {
 		CanvasConfig.addColor(this, \background, Color.new255(20,20,20));
@@ -34,8 +36,10 @@ Canvas {
 		// resizeParentAction = nil;
 
 		canvasActions = MultiLevelIdentityDictionary.new;
-		drawLayers = List.new;
-		animations = IdentityDictionary.new;
+		drawLayers = IdentityDictionary.new;
+		drawOrder = List.new;
+		// layers = CanvasDraw(this);
+		// animations = IdentityDictionary.new;
 
 		if(parent.isNil)
 		{
@@ -44,6 +48,8 @@ Canvas {
 				bounds: Window.flipY(Rect(x, y, w, h)),
 				border: false
 			).front.view.alwaysOnTop_(true).acceptsMouseOver_(true);
+			// win.setProperty(\autoFillBackground, false);
+			win.setProperty(\background, Color(0,0,0,0.01));
 
 			// var scroll = ScrollView(win,Rect(0, 0, w, h)).hasBorder_(false);
 			// canvasView = UserView(scroll, Rect(0, 0, w, 1000));
@@ -58,22 +64,7 @@ Canvas {
 		};
 
 		canvasView.drawingEnabled = true;
-		canvasView.drawFunc = {	drawLayers.do({|assoc| assoc.value.value(Rect(0,0, this.width, this.height)) }) };
 
-		this.draw_addLayer(\background, {|rect|
-			// var rect = Rect(0,0, canvas.width, canvas.height);
-			if(colorBackground.notNil) {
-				Pen.fillColor_( colorBackground );
-				Pen.fillRect(rect)
-			};
-		});
-		this.draw_addLayer(\frame, {|rect|
-			// var rect = Rect(0,0, canvas.width, canvas.height);
-			if(colorFrame.notNil && this.showFrame) {
-				Pen.strokeColor_( colorFrame );
-				Pen.strokeRect( rect );
-			};
-		});
 		/*
 		View.globalKeyDownAction = {|v, char, modifiers, unicode, keycode|
 		"% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
@@ -85,7 +76,44 @@ Canvas {
 		};
 		*/
 
-		// this.draw();
+		this.draw = {|rect|
+			Pen.strokeColor = Color.white;
+			Pen.strokeRect(rect);
+		};
+
+	}
+
+	// DRAWING ///////////////////////////////////////////
+
+	draw_ {|fnc|
+		canvasView.drawFunc = {fnc.value(canvasView.bounds)};
+		this.refresh;
+	}
+
+	draw_addLayer {|name, fnc| drawLayers.put(name.asSymbol, fnc) }
+	draw_addAnimation {|name, fnc, dur = 1, valFrom = 0, valTo = 1|
+		var animFnc = {
+			// this.draw = animFnc;
+			// parent.view.drawFunc = parent.view.drawFunc.addFunc({fnc.value(parent.view.bounds, 0.5)});
+			fnc.value(canvasView.bounds);
+			"anim".warn;
+			// parent.view.drawFunc = { animFnc.value(parent.view.bounds) };
+			SystemClock.sched(dur, { "anim End".warn; nil });
+			// parent.refresh;
+		};
+
+		drawLayers.put(name.asSymbol, animFnc);
+	}
+
+	draw_removeLayer {|name| drawLayers.removeAt(name.asSymbol)	}
+
+	draw_printLayer { drawLayers.postln }
+
+	draw_layer {|name| ^drawLayers.at(name.asSymbol) }
+
+	order {|name, index|
+		// canvasView.drawFunc.array
+		drawOrder.postln;
 	}
 
 	// ACTIONS ///////////////////////////////////////////
@@ -154,78 +182,82 @@ Canvas {
 
 	// DRAW LAYERS ///////////////////////////////////////////
 
+
+
+	/*
 	draw_addLayer {|name, fnc, before = nil|
-		var exist = false;
-		var foundAt = 0;
-		var beforeAt = drawLayers.size;
+	var exist = false;
+	var foundAt = 0;
+	var beforeAt = drawLayers.size;
 
-		drawLayers.do({|assoc, i|
-			if(assoc.key == before.asSymbol) { beforeAt = i };
-			if(assoc.key == name.asSymbol) { exist = true; foundAt = i };
-		});
+	drawLayers.do({|assoc, i|
+	if(assoc.key == before.asSymbol) { beforeAt = i };
+	if(assoc.key == name.asSymbol) { exist = true; foundAt = i };
+	});
 
-		if(exist.not)
-		{ drawLayers.insert(beforeAt, name.asSymbol -> fnc) }
-		{ drawLayers[foundAt] = name.asSymbol -> fnc };
+	if(exist.not)
+	{ drawLayers.insert(beforeAt, name.asSymbol -> fnc) }
+	{ drawLayers[foundAt] = name.asSymbol -> fnc };
 
-		this.refresh;
+	this.refresh;
 	}
 	draw_removeLayer {|name|
-		var foundAt = nil;
-		drawLayers.do({|assoc, i| if(assoc.key == name.asSymbol) { foundAt = i } });
-		if(foundAt.notNil) { drawLayers.removeAt(foundAt) };
-		this.refresh;
+	var foundAt = nil;
+	drawLayers.do({|assoc, i| if(assoc.key == name.asSymbol) { foundAt = i } });
+	if(foundAt.notNil) { drawLayers.removeAt(foundAt) };
+	this.refresh;
 	}
 
 	printLayers {
-		drawLayers.do({|assoc, i| "%) - key: % value: %".format(i, assoc.key, assoc.value).postln; });
+	drawLayers.do({|assoc, i| "%) - key: % value: %".format(i, assoc.key, assoc.value).postln; });
 	}
 
 
 	animation_start {|name, animFnc, dur = 1, valFrom = 0, valTo = 1|
-		var frame = 0;
-		var frameRate = 30;
-		var frameDur = 1 / frameRate;
-		var cntFrame = dur / frameDur + 1 ;
-		var values = Array.interpolation(cntFrame, valFrom, valTo );
-		var times = Array.interpolation(cntFrame, 0, dur);
-		var task;
-		var startTime = SystemClock.seconds;
+	var frame = 0;
+	var frameRate = 30;
+	var frameDur = 1 / frameRate;
+	var cntFrame = dur / frameDur + 1 ;
+	var values = Array.interpolation(cntFrame, valFrom, valTo);
+	var times = Array.interpolation(cntFrame, 0, dur);
+	var task;
+	var startTime = SystemClock.seconds;
 
-		cntFrame.postln;
-		times.postln;
-		values.postln;
+	cntFrame.postln;
+	times.postln;
+	values.postln;
 
-		task = Routine.run({
-			var delay = 0;
+	task = Routine.run({
+	var delay = 0;
 
-			while ({ frame <= ((dur * frameRate)) }, {
-				"\nframe: %".format(frame).postln;
+	while ({ frame <= ((dur * frameRate)) }, {
+	"\nframe: %".format(frame).postln;
 
-				if(values[frame].notNil)
-				{
-					animFnc.value(values[frame], frame, frame * frameDur );
-					(frameDur - delay).wait;
-				}
-				{
-					"nil action".warn;
-					animFnc.value(valTo, frame, frame * frameDur);
-				};
-				delay = SystemClock.seconds - startTime - (frame * frameDur);
-				"timeCheck: %".format(SystemClock.seconds - startTime).postln;
-				"delay: %".format(delay).postln;
+	if(values[frame].notNil)
+	{
+	animFnc.value(values[frame], frame, frame * frameDur );
+	(frameDur - delay).wait;
+	}
+	{
+	"nil action".warn;
+	animFnc.value(valTo, frame, frame * frameDur);
+	};
+	delay = SystemClock.seconds - startTime - (frame * frameDur);
+	"timeCheck: %".format(SystemClock.seconds - startTime).postln;
+	"delay: %".format(delay).postln;
 
-				frame = frame + 1;
-			});
-			"timeCheck: %".format(SystemClock.seconds - startTime).warn;
-		}, clock: AppClock );
-		animations.put(name.asSymbol, task);
-		// ^task;
+	frame = frame + 1;
+	});
+	"timeCheck: %".format(SystemClock.seconds - startTime).warn;
+	}, clock: AppClock );
+	animations.put(name.asSymbol, task);
+	// ^task;
 	}
 	animation_stop {|name|
-		var task = animations.at(name.asSymbol);
-		if(task.notNil) { task.stop };
+	var task = animations.at(name.asSymbol);
+	if(task.notNil) { task.stop };
 	}
+	*/
 
 	///////////////////////////////////////////////////////
 

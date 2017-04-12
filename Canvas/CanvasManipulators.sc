@@ -17,14 +17,16 @@ CanvasMove : Canvas {
 		var backAlpha = 0;
 		this.alpha = backAlpha;
 
-		label = CanvasText(0, 0, this.width, this.height, this)
+		this.acceptClickThrough = false;
+
+		label = CanvasText(0, 0, this.width, thickness, this)
 		.name_("CanvasMove_label")
 		.acceptClickThrough_(true)
 		.draw_removeLayer(\frame)
 		.draw_removeLayer(\background)
 		// .showFrame_(false)
 		// .alpha_(0)
-		.add_onParentResize(\default, {|parentCanvas| label.size_(parentCanvas.width, parentCanvas.height) });
+		.add_onParentResize(\default, {|parentCanvas| label.size_(parentCanvas.width, thickness) });
 
 		this.name = "CanvasMove";
 		this.add_onParentResize(\default, {|parentCanvas|
@@ -73,8 +75,13 @@ CanvasMove : Canvas {
 			)
 		});
 
-		// this.draw_removeLayer(\background);
-		this.draw_removeLayer(\frame);
+		// draws.layer(\background)
+		/*
+		layers.addLayer(\background, 0, { |rect|
+			Pen.fillColor = CanvasConfig.getColor(this, \background);
+			Pen.fillRect(rect);
+		});
+		*/
 	}
 
 	string_ {|txt| label.string = txt }
