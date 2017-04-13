@@ -6,7 +6,7 @@ Canvas {
 
 	var canvasActions;
 	// var drawLayers, animations;
-	var drawLayers, drawOrder;
+	var <drawLayers, drawOrder;
 
 
 	*initClass {
@@ -75,11 +75,16 @@ Canvas {
 		// "% ,% ,% ,% ,%".format(v, char, modifiers, unicode, keycode).postln;
 		};
 		*/
-
+		/*
 		this.draw = {|rect|
+		Pen.strokeColor = Color.white;
+		Pen.strokeRect(rect);
+		};
+		*/
+		this.draw_addLayer(\frame, {|rect|
 			Pen.strokeColor = Color.white;
 			Pen.strokeRect(rect);
-		};
+		});
 
 	}
 
@@ -90,7 +95,19 @@ Canvas {
 		this.refresh;
 	}
 
-	draw_addLayer {|name, fnc| drawLayers.put(name.asSymbol, fnc) }
+	draw_addLayer {|name, fnc|
+		var fncList;
+		drawLayers.put(name.asSymbol, fnc);
+		drawLayers.keys.postln;
+		drawLayers.values.postln;
+		drawLayers.keys.do({|oneLay, key| oneLay.postln; });
+		fncList = FunctionList(drawLayers.values.reverse);
+		this.draw_(fncList);
+		// canvasView.drawFunc = {fncList.value(canvasView.bounds)};
+		drawOrder.insert(drawOrder.size, name.asSymbol);
+		// this.refresh;
+	}
+
 	draw_addAnimation {|name, fnc, dur = 1, valFrom = 0, valTo = 1|
 		var animFnc = {
 			// this.draw = animFnc;
@@ -111,7 +128,8 @@ Canvas {
 
 	draw_layer {|name| ^drawLayers.at(name.asSymbol) }
 
-	order {|name, index|
+	order {|...names|
+		drawLayers.associationsDo({|assoc, i| "i:%, key:%".format(i, assoc.key).postln; });
 		// canvasView.drawFunc.array
 		drawOrder.postln;
 	}
